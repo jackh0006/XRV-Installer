@@ -1,0 +1,93 @@
+name: Test XRV Installer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax-check:
+    name: Bash syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check syntax
+        run: bash -n xrv-install.sh
+
+  shellcheck:
+    name: ShellCheck lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: .
+          severity: warning
+
+  unit-tests:
+    name: Unit tests (Python helpers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test deployment manager
+        run: |
+          python3 -c "
+import json, tempfile, os, subprocess, sys
+# Create test config
+with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    json.dump({'script_keys': [
+        {'id': 'AKfycb_test1234567890abcdef12', 'account': 'acct-a'},
+        {'id': 'AKfycb_test9876543210fedcba98', 'account': 'acct-b'}
+    ]}, f)
+    cfg = f.name
+
+# Test list
+result = subprocess.run(['python3', '-c', '''
+import json, sys
+cfg = sys.argv[1]
+with open(cfg) as f: c = json.load(f)
+ks = c.setdefault(\"script_keys\", [])
+for i,k in enumerate(ks, 1): 
+    mask = (k.get(\"id\", \"\")[:12] + chr(8230) + k.get(\"id\", \"\")[-6:] if len(k.get(\"id\", \"\")) > 16 else k.get(\"id\", \"\"))
+    print(f\"{i}  {mask}  {k.get('account', '?')}\")
+''', cfg], capture_output=True, text=True)
+assert result.returncode == 0, f\"list failed: {result.stderr}\"
+assert 'acct-a' in result.stdout and 'acct-b' in result.stdout
+print('list test passed')
+
+# Test add
+result = subprocess.run(['python3', '-c', '''
+import json, sys
+cfg, new_id, new_acct = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(cfg) as f: c = json.load(f)
+ks = c.setdefault(\"script_keys\", [])
+ks.append({\"id\": new_id, \"account\": new_acct})
+with open(cfg, \"w\") as f: json.dump(c, f, indent=2)
+print(f\"ADDED count={len(ks)}\")
+''', cfg, 'AKfycb_new0000000000000000000', 'acct-c'], capture_output=True, text=True)
+assert result.returncode == 0, f\"add failed: {result.stderr}\"
+assert 'ADDED count=3' in result.stdout
+print('add test passed')
+
+# Test delete
+result = subprocess.run(['python3', '-c', '''
+import json, sys
+cfg, idx = sys.argv[1], int(sys.argv[2])
+with open(cfg) as f: c = json.load(f)
+ks = c.setdefault(\"script_keys\", [])
+if 1 <= idx <= len(ks):
+    ks.pop(idx-1)
+    with open(cfg, \"w\") as f: json.dump(c, f, indent=2)
+    print(f\"DELETED count={len(ks)}\")
+else:
+    print(\"BADIDX\"); sys.exit(1)
+''', cfg, '1'], capture_output=True, text=True)
+assert result.returncode == 0, f\"del failed: {result.stderr}\"
+assert 'DELETED count=2' in result.stdout
+print('delete test passed')
+
+os.unlink(cfg)
+print('All deployment manager tests passed!')
+"

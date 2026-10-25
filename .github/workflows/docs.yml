@@ -1,0 +1,29 @@
+name: Build Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'xrv-install.sh'
+      - 'README.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  build-docs:
+    name: Generate Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract help text as Markdown
+        run: |
+          bash xrv-install.sh --help 2>&1 | sed '1,/USAGE:/d' > docs/usage.md || true
+      - name: Generate changelog
+        run: |
+          git log --oneline --pretty=format:"- %s (%h)" > docs/CHANGELOG.md || true
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs

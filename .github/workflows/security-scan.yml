@@ -1,0 +1,62 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'  # Weekly on Monday
+
+jobs:
+  secret-scan:
+    name: TruffleHog Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+
+  dependency-scan:
+    name: Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for vulnerable patterns
+        run: |
+          # Check for hardcoded secrets
+          if grep -rE "(password|secret|key|token)\s*=\s*[\"'][^\"']{8,}[\"']" --include="*.sh" . | grep -v "XRV_" | grep -v "example"; then
+            echo "Potential hardcoded secrets found"
+            exit 1
+          fi
+          # Check for unsafe curl/wget
+          if grep -r "curl.*-k\|wget.*--no-check-certificate" --include="*.sh" .; then
+            echo "Unsafe TLS verification bypass found"
+            exit 1
+          fi
+          echo "No obvious security issues found"
+
+  script-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for dangerous patterns
+        run: |
+          # Check for eval, exec, etc.
+          if grep -rE "\beval\b|\bexec\b|\bsource.*\$\b" --include="*.sh" . | grep -v "^Binary"; then
+            echo "Warning: dangerous shell patterns found"
+            exit 1
+          fi
+          # Check for proper error handling
+          if ! grep -q "set -Eeuo pipefail" xrv-install.sh; then
+            echo "Missing strict mode"
+            exit 1
+          fi
+          echo "Static analysis passed"

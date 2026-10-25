@@ -1,0 +1,29 @@
+name: Release XRV
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify syntax
+        run: bash -n xrv-install.sh
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: .
+          severity: warning
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: xrv-install.sh
+          generate_release_notes: true
+          draft: false
+          prerelease: false
