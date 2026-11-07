@@ -24,7 +24,7 @@ jobs:
         uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # master
         with:
           scandir: .
-          severity: warning
+          severity: error
 
   unit-tests:
     name: Unit tests (Python helpers)
