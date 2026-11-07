@@ -1,0 +1,7 @@
+*.log
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.csr
