@@ -1,4 +1,4 @@
-name: Test XRV Installer
+name: CI
 
 on:
   push:
@@ -6,30 +6,59 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  syntax-check:
-    name: Bash syntax check
+  syntax:
+    name: Bash syntax
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Check syntax
-        run: bash -n xrv-install.sh
+      - name: Check every shell file
+        run: |
+          bash -n xrv-install.sh
+          bash -n xrv-client.sh
+          for f in tests/*.sh test-client.sh test-on-vps.sh push-to-github.sh; do
+            bash -n "$f"
+          done
 
   shellcheck:
-    name: ShellCheck lint
+    name: ShellCheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # master
-        with:
-          scandir: .
-          severity: error
+        run: shellcheck -S warning -x xrv-install.sh xrv-client.sh tests/*.sh test-client.sh test-on-vps.sh push-to-github.sh
 
-  help-output:
+  tests:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq haproxy python3 curl openssl
+      - name: Run the suite
+        env:
+          HAPROXY_BIN: /usr/sbin/haproxy
+        run: bash tests/run-all.sh
+
+  help:
     name: Help output
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Verify installer help
-        run: bash xrv-install.sh --help >/dev/null
+      - name: Verify both installers print usage
+        run: |
+          bash xrv-install.sh --help >/dev/null
+          bash xrv-client.sh --help >/dev/null
+          bash xrv-install.sh --version
+          bash xrv-client.sh --version

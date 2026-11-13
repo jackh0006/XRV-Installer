@@ -1,10 +1,26 @@
 cff-version: 1.2.0
 title: "XRV Installer"
-message: "Installer and management toolkit for XRV."
+message: "If you use this software, please cite it as below."
 type: software
+version: "1.1.0"
+date-released: "2026-11-13"
+abstract: >-
+  Hardened installer and management toolkit for XRV, a GooseRelayVPN-optimized
+  SOCKS5 tunnel for Linux VPS and Android Termux, with pinned releases,
+  certificate lifecycle management, and a sandboxed TLS front.
 authors:
   - family-names: "Hudson"
     given-names: "Jack"
     email: "jackh109867@gmail.com"
 repository-code: "https://github.com/jackh0006/XRV-Installer"
+url: "https://github.com/jackh0006/XRV-Installer"
 license: "MIT"
+keywords:
+  - vpn
+  - socks5
+  - apps-script
+  - termux
+  - linux
+  - vps
+  - privacy
+  - security

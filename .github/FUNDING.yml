@@ -1,0 +1,4 @@
+# GitHub's funding picker supports only URLs for crypto donations.
+# The canonical addresses live in DONATE.md so a release never depends on a
+# third party.
+custom: ["https://github.com/jackh0006/XRV-Installer/blob/main/DONATE.md"]
