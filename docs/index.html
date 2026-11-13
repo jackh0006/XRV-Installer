@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XRV Installer — documentation</title>
+  <meta name="description" content="Hardened installer for XRV: a GooseRelayVPN-optimized SOCKS5 tunnel for Linux VPS and Android Termux.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <p class="eyebrow">Open source · MIT</p>
+    <h1>XRV Installer</h1>
+    <p class="lead">
+      A private SOCKS5 tunnel that travels inside ordinary Google HTTPS.
+      One small VPS is the exit. Your devices run a client. The tunnel key never
+      leaves your machines.
+    </p>
+    <p>
+      <a class="button" href="https://github.com/jackh0006/XRV-Installer">GitHub</a>
+      <a class="button" href="https://github.com/jackh0006/XRV-Installer/releases/latest">Download</a>
+      <a class="button" href="USER-GUIDE.html">Plain-language guide</a>
+    </p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Start here</h2>
+      <ul class="cards">
+        <li><a href="USER-GUIDE.html"><strong>Complete guide</strong><span>Every step, every word, every error — no networking knowledge assumed.</span></a></li>
+        <li><a href="usage.html"><strong>Server help</strong><span>Every flag and menu option for <code>xrv-install.sh</code>.</span></a></li>
+        <li><a href="client-usage.html"><strong>Client help</strong><span>Every flag and option for <code>xrv-client.sh</code>.</span></a></li>
+        <li><a href="ARCHITECTURE.html"><strong>Architecture</strong><span>Components, ports, files, trust boundaries and systemd hardening.</span></a></li>
+        <li><a href="TROUBLESHOOTING.html"><strong>Troubleshooting</strong><span>Exact causes and fixes for the most common failures.</span></a></li>
+        <li><a href="CHANGELOG.html"><strong>Changelog</strong><span>Release history and upgrade notes.</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Install in one line</h2>
+      <p>Server, on Ubuntu/Debian amd64 or arm64:</p>
+      <pre><code>sudo bash xrv-install.sh</code></pre>
+      <p>Client, on Linux or Termux arm64:</p>
+      <pre><code>bash xrv-client.sh</code></pre>
+    </section>
+
+    <section>
+      <h2>Safety</h2>
+      <p>
+        Never share <code>client_config.json</code>, the 64-character tunnel key,
+        a private key, or a recovery phrase. A donation is optional and never
+        buys support or priority. Read
+        <a href="https://github.com/jackh0006/XRV-Installer/blob/main/SECURITY.md">SECURITY.md</a>
+        for the threat model and limits.
+      </p>
+    </section>
+
+    <section>
+      <h2>Project</h2>
+      <ul>
+        <li><a href="https://github.com/jackh0006/XRV-Installer">Source code</a></li>
+        <li><a href="https://github.com/jackh0006/XRV-Installer/releases/latest">Latest release and checksums</a></li>
+        <li><a href="https://github.com/jackh0006/XRV-Installer/blob/main/SUPPORT.md">Support</a></li>
+        <li><a href="https://github.com/jackh0006/XRV-Installer/blob/main/DONATE.md">Optional donations</a></li>
+        <li><a href="https://github.com/jackh0006/XRV-Installer/blob/main/CONTRIBUTING.md">Contributing</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>MIT licensed. Upstream GooseRelayVPN is a separate MIT project.</p>
+  </footer>
+</body>
+</html>
