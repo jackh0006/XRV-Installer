@@ -3,9 +3,10 @@
 XRV Installer is free and open source. If it saves you time, optional
 donations help cover VPS, certificate, and maintenance costs.
 
-These are the author's public receiving addresses, copied from the
+These are the author's public receiving addresses, copied from the author's
+public repositories, including
 [BNB-Terminal-Wallet](https://github.com/jackh0006/BNB-Terminal-Wallet) and
-[X-Wallet](https://github.com/jackh0006/X-Wallet) repositories. They are grouped
+[X-Wallet](https://github.com/jackh0006/X-Wallet). They are grouped
 by the network the author published them for. An address being valid on one
 network does **not** imply that the same asset or token is supported on another
 network. Verify the whole address from at least two official repository
