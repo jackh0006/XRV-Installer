@@ -1,4 +1,4 @@
-# XRV v1.1.0 — live test checklist
+# XRV v1.1.1 — live test checklist
 
 Use this on a fresh VPS and a fresh client. Every step says what success looks
 like and where to look when it does not.

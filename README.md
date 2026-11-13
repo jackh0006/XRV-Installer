@@ -36,6 +36,7 @@ knowledge.**
 
 **Quick links:**
 [Simple guide](docs/USER-GUIDE.md) ·
+[Documentation site](https://jackh0006.github.io/XRV-Installer/) ·
 [Install](#server-install-vps) ·
 [Client](#client-install) ·
 [Certificates](#certificates) ·
