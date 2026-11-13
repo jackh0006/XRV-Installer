@@ -606,7 +606,7 @@ VPS. It does not make you invisible.
 - Apps Script has a daily limit per Google account.
 - This is not an anonymity network like Tor.
 
-For the full threat model, read [SECURITY.md](../SECURITY.md).
+For the full threat model, read [SECURITY.md](https://github.com/jackh0006/XRV-Installer/blob/main/SECURITY.md).
 
 ---
 
@@ -616,8 +616,8 @@ For the full threat model, read [SECURITY.md](../SECURITY.md).
   [issue](https://github.com/jackh0006/XRV-Installer/issues/new/choose).
 - **Security problem:** use a
   [private advisory](https://github.com/jackh0006/XRV-Installer/security/advisories/new).
-- **What to include:** [SUPPORT.md](../SUPPORT.md).
-- **Optional donations:** [DONATE.md](../DONATE.md).
+- **What to include:** [SUPPORT.md](https://github.com/jackh0006/XRV-Installer/blob/main/SUPPORT.md).
+- **Optional donations:** [DONATE.md](https://github.com/jackh0006/XRV-Installer/blob/main/DONATE.md).
 
 A donation is optional. It does not buy support, priority, or a different
 license.

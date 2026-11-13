@@ -27,6 +27,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Configure Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Install Markdown converter
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq pandoc
       - name: Generate server help page
         run: |
           mkdir -p docs
@@ -53,6 +55,13 @@ jobs:
             echo
             git log --oneline --pretty=format:'- %s (%h)'
           } > docs/CHANGELOG.md || true
+      - name: Render Markdown pages
+        run: |
+          for f in docs/*.md; do
+            base="$(basename "$f" .md)"
+            pandoc "$f" -s --css style.css --metadata title="XRV — $base" -o "docs/${base}.html"
+          done
+          touch docs/.nojekyll
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
