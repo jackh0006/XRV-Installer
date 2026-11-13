@@ -1,54 +1,58 @@
 #!/usr/bin/env bash
-# XRV v1.0 — GitHub Repository Setup & Push
-# Run ONCE from the xrv-installer directory
-
+# SPDX-License-Identifier: MIT
+# Manual helper: stage, commit and optionally push the current XRV release.
+# This script never pushes without asking.
 set -Eeuo pipefail
+
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT" || exit 1
 
 REPO_OWNER="jackh0006"
 REPO_NAME="XRV-Installer"
 REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
+VERSION="${XRV_VERSION:-1.1.0}"
 
-echo "=== XRV v1.0 GitHub Push ==="
-echo "This will:"
-echo "  1. Initialize git repo"
-echo "  2. Create initial commit"
-echo "  3. Create GitHub repo (requires gh auth)"
-echo "  4. Push to origin"
-echo ""
-read -p "Continue? [y/N] " -n 1 -r
+echo "=== XRV v${VERSION} release helper ==="
+echo "Repository: ${REPO_URL}"
 echo
-[[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted"; exit 1; }
 
-# 1. Git init
-git init
-git config user.name "jackh0006"
-git config user.email "jackh109867@gmail.com"
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "This folder is not a Git repository."
+  exit 1
+fi
 
-# 2. Add all files
-git add .
+git status --short
+echo
+read -r -p "Stage all changes and commit? [y/N] " answer
+if [[ ! "$answer" =~ ^[Yy]$ ]]; then
+  echo "Aborted."
+  exit 1
+fi
 
-# 3. Initial commit
-git commit -m "XRV v1.0 — GooseRelayVPN Optimized Installer
+git add -A
+git commit -m "XRV v${VERSION} — security, certificate and client overhaul
 
-- Google Apps Script + VPS only (no multi-provider mesh)
-- Speed: 4 deployments × 2 accounts, HTTP/2 HAProxy, coalesce_step_ms=100ms
-- Stability: TLS fingerprint mimicry, ECH, blocking detection + auto-failover
-- Security: entropy-checked keys, JSON schema validation, audit logging, TLS 1.3-only HAProxy
-- Platforms: Linux amd64 (VPS + client) + Android arm64 (Termux)
-- Doctor v2 (10-stage), smart idempotence, deployment-ID manager (any count)
-- SHA256-pinned v1.7.1 binaries
-- GitHub Actions: test, release, security-scan, docs"
+- standalone xrv-client.sh for Linux amd64/arm64 and Termux arm64
+- pinned SHA-256 verification for client and server archives
+- certificate issue/renew/replace/revoke with deploy hooks
+- dedicated sandboxed xrv-haproxy service, TLS 1.3 only
+- unprivileged xrv relay user and strict systemd hardening
+- plain-language errors, redacted logs, firewall SSH-port detection
+- tests: syntax, ShellCheck, unit, offline install, HAProxy config"
 
-# 4. Create GitHub repo (requires gh CLI authenticated)
-if command -v gh >/dev/null 2>&1; then
-  echo "Creating GitHub repository..."
-  gh repo create "${REPO_OWNER}/${REPO_NAME}" --public --source=. --remote=origin --push
-  echo "✅ Pushed to ${REPO_URL}"
+if ! git remote get-url origin >/dev/null 2>&1; then
+  git remote add origin "$REPO_URL"
+fi
+
+echo
+read -r -p "Push this commit and tag v${VERSION}? [y/N] " push
+if [[ "$push" =~ ^[Yy]$ ]]; then
+  git push origin HEAD
+  git tag -a "v${VERSION}" -m "XRV v${VERSION}"
+  git push origin "v${VERSION}"
+  echo "Pushed. The release workflow will build the GitHub release."
 else
-  echo "⚠️  gh CLI not found. Manual steps:"
-  echo "  1. Create repo at: https://github.com/new"
-  echo "  2. Name: ${REPO_NAME}"
-  echo "  3. Then run:"
-  echo "     git remote add origin ${REPO_URL}"
-  echo "     git push -u origin main"
+  echo "Committed locally. Push when ready:"
+  echo "  git push origin HEAD"
+  echo "  git tag -a v${VERSION} -m 'XRV v${VERSION}' && git push origin v${VERSION}"
 fi
