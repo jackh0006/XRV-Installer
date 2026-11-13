@@ -1,29 +1,72 @@
-name: Build Documentation
+name: Documentation
 
 on:
   push:
     branches: [main]
     paths:
       - 'xrv-install.sh'
+      - 'xrv-client.sh'
       - 'README.md'
       - 'docs/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  build-docs:
-    name: Generate Docs
+  build:
+    name: Build help pages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Extract help text as Markdown
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Generate server help page
         run: |
-          bash xrv-install.sh --help 2>&1 | sed '1,/USAGE:/d' > docs/usage.md || true
-      - name: Generate changelog
+          mkdir -p docs
+          {
+            echo '# Server help'
+            echo
+            echo '```text'
+            bash xrv-install.sh --help
+            echo '```'
+          } > docs/usage.md
+      - name: Generate client help page
         run: |
-          git log --oneline --pretty=format:"- %s (%h)" > docs/CHANGELOG.md || true
-      - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@373f7f263a76c20808c831209c920827a82a2847 # v3
+          {
+            echo '# Client help'
+            echo
+            echo '```text'
+            bash xrv-client.sh --help
+            echo '```'
+          } > docs/client-usage.md
+      - name: Generate changelog page
+        run: |
+          {
+            echo '# Commit history'
+            echo
+            git log --oneline --pretty=format:'- %s (%h)'
+          } > docs/CHANGELOG.md || true
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          path: ./docs
+
+  deploy:
+    name: Deploy Pages
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

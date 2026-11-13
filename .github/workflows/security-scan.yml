@@ -1,7 +1,4 @@
-name: Security Scan
-
-permissions:
-  contents: read
+name: Security
 
 on:
   push:
@@ -9,11 +6,14 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 3 * * 1'  # Weekly on Monday
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
 
 jobs:
   secret-scan:
-    name: TruffleHog Secret Scan
+    name: TruffleHog secret scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -23,3 +23,39 @@ jobs:
         uses: trufflesecurity/trufflehog@f8221ca52ac51bf66228d6ec3691f3ea0782ae15 # main
         with:
           path: ./
+          extra_args: --only-verified
+
+  static-check:
+    name: Static security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Reject TLS verification bypasses
+        run: |
+          if grep -rnE --include='*.sh' 'curl[^#]*[[:space:]]-k([[:space:]]|$)|wget[^#]*--no-check-certificate|InsecureSkipVerify[[:space:]]*:[[:space:]]*true' .; then
+            echo "TLS verification bypass found"
+            exit 1
+          fi
+          echo "No TLS verification bypasses found"
+      - name: Reject dangerous primitives
+        run: |
+          if grep -rnE --include='*.sh' '\beval[[:space:]]|rm[[:space:]]+-rf[[:space:]]+/([[:space:]]|$)' .; then
+            echo "Dangerous shell primitive found"
+            exit 1
+          fi
+          echo "No eval or rm -rf / found"
+      - name: Require strict shell mode
+        run: |
+          grep -q 'set -Eeuo pipefail' xrv-install.sh
+          grep -q 'set -Eeuo pipefail' xrv-client.sh
+          echo "Strict mode present"
+      - name: Verify pinned upstream digests
+        run: bash tests/test-release.sh
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0

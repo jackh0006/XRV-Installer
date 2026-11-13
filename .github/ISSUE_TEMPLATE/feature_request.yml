@@ -21,4 +21,13 @@ body:
     id: security
     attributes:
       label: Security and privacy impact
-      description: Describe any new trust boundary, permission, or data flow.
+      description: Any new port, permission, trust boundary, dependency, or data flow?
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: This request does not require weakening TLS, logging secrets, or running the relay as root.
+          required: true

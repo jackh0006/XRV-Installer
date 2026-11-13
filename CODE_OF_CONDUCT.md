@@ -1,50 +1,62 @@
 # Contributor Covenant Code of Conduct
 
-## Our Pledge
+## Our pledge
 
-We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socioeconomic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
+We as members, contributors, and leaders pledge to make participation in our
+community a harassment-free experience for everyone, regardless of age, body
+size, visible or invisible disability, ethnicity, sex characteristics, gender
+identity and expression, level of experience, education, socio-economic
+status, nationality, personal appearance, race, religion, or sexual identity
+and orientation.
 
-We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
+We pledge to act and interact in ways that contribute to an open, welcoming,
+diverse, inclusive, and healthy community.
 
-## Our Standards
+## Our standards
 
-Examples of behavior that contributes to a positive environment include:
+Examples of behaviour that contributes to a positive environment:
 
 - demonstrating empathy and kindness toward other people;
-- respecting differing opinions, viewpoints, and experiences;
+- being respectful of differing opinions, viewpoints, and experiences;
 - giving and gracefully accepting constructive feedback;
-- accepting responsibility and apologizing to those affected by our mistakes;
-- focusing on what is best for the community.
+- accepting responsibility and apologising to those affected by our mistakes;
+- focusing on what is best for the overall community.
 
-Examples of unacceptable behavior include:
+Examples of unacceptable behaviour:
 
-- sexualized language or imagery, and sexual attention or advances;
+- sexualised language or imagery, and sexual attention or advances;
 - trolling, insulting or derogatory comments, and personal or political attacks;
 - public or private harassment;
 - publishing others' private information without explicit permission;
-- other conduct which could reasonably be considered inappropriate in a professional setting.
+- other conduct which could reasonably be considered inappropriate in a
+  professional setting.
 
-## Enforcement Responsibilities
+## Enforcement responsibilities
 
-Community leaders are responsible for clarifying and enforcing these standards and will take appropriate and fair corrective action in response to any behavior they deem inappropriate, threatening, offensive, or harmful.
+Project maintainers are responsible for clarifying and enforcing these
+standards and will take appropriate and fair corrective action in response to
+any behaviour they deem inappropriate, threatening, offensive, or harmful.
 
 ## Scope
 
-This Code of Conduct applies within all community spaces and when an individual is officially representing the community in public spaces.
+This code applies within all community spaces and when an individual is
+officially representing the project in public spaces.
 
 ## Enforcement
 
-Report abusive, harassing, or otherwise unacceptable behavior to **jackh109867@gmail.com**. All complaints will be reviewed and investigated promptly and fairly. Community leaders will respect the privacy and security of the reporter.
+Report abusive, harassing, or otherwise unacceptable behaviour to the project
+maintainers through the contact in [SECURITY.md](SECURITY.md). All complaints
+will be reviewed and investigated promptly and fairly. Maintainers will respect
+the privacy and security of the reporter.
 
-## Enforcement Guidelines
-
-Community leaders will follow these guidelines in determining consequences:
+## Enforcement guidelines
 
 1. **Correction** — a private warning and explanation.
-2. **Warning** — a warning with consequences for continued behavior.
+2. **Warning** — a warning with consequences for continued behaviour.
 3. **Temporary ban** — a temporary ban from interaction.
-4. **Permanent ban** — a permanent ban from community participation.
+4. **Permanent ban** — a permanent ban from the community.
 
 ## Attribution
 
-This Code of Conduct is adapted from the Contributor Covenant, version 2.1, available at <https://www.contributor-covenant.org/version/2/1/code_of_conduct.html>.
+This Code of Conduct is adapted from the
+[Contributor Covenant](https://www.contributor-covenant.org), version 2.1.
