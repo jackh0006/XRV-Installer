@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.2.3 — hardened GooseRelayVPN server installer and manager.
+# XRV v1.2.4 — hardened GooseRelayVPN server installer and manager.
 #
 # Main server installer for Linux amd64/arm64 VPS.
 # Client installer (Ubuntu amd64 + Termux arm64) lives in xrv-client.sh.
@@ -22,7 +22,7 @@ umask 022
 # =====================================================================
 # VERSION & METADATA
 # =====================================================================
-XRV_VERSION="1.2.3"
+XRV_VERSION="1.2.4"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
@@ -1210,10 +1210,28 @@ check_domain_dns() {
   return 0
 }
 
+systemd_service_for_pid() {
+  # A listener is often named after its binary, not its service. Resolve the
+  # service from the main PID so the user gets a safe, reversible choice.
+  local pid="$1" unit main_pid
+  while IFS= read -r unit; do
+    [[ "$unit" =~ \.service$ ]] || continue
+    main_pid="$(systemctl show --property=MainPID --value "$unit" 2>/dev/null || true)"
+    if [[ "$main_pid" == "$pid" ]]; then
+      printf '%s' "$unit"
+      return 0
+    fi
+  done < <(systemctl list-units --type=service --state=running --no-legend --no-pager --plain 2>/dev/null | awk '{print $1}')
+  return 1
+}
+
 port80_conflicts() {
-  local owners
-  owners="$(ss -ltnpH 'sport = :80' 2>/dev/null | sed -n 's/.*users:((\"\([^\"]*\)\".*/\1/p' | sort -u)"
-  printf '%s' "$owners"
+  local process pid unit owners=()
+  while IFS=' ' read -r process pid; do
+    unit="$(systemd_service_for_pid "$pid" || true)"
+    owners+=("${unit:-$process}")
+  done < <(ss -ltnpH 'sport = :80' 2>/dev/null | sed -n 's/.*users:(("\([^"]*\)",pid=\([0-9]*\).*/\1 \2/p' | sort -u)
+  (IFS=$'\n'; printf '%s' "${owners[*]:-}")
 }
 
 certificate_usable() {
@@ -1306,6 +1324,23 @@ issue_certificate() {
     local stop_list=""
     for svc in $conflicts; do
       case "$svc" in
+        *.service)
+          if ! systemctl is-active --quiet "$svc" 2>/dev/null; then
+            restart_acme_services "${stopped[@]}"
+            die "Port 80 is owned by '$svc', but it is not active. No certificate request was made."
+          fi
+          if confirm "Temporarily stop '$svc' for about 20 seconds so Let's Encrypt can verify your domain?"; then
+            if ! systemctl stop "$svc"; then
+              restart_acme_services "${stopped[@]}"
+              die "Could not stop $svc. No certificate request was made."
+            fi
+            stopped+=("$svc")
+            stop_list="${stop_list}${stop_list:+ }$svc"
+          else
+            restart_acme_services "${stopped[@]}"
+            die "Certificate not requested. Keep $svc running and use DNS-01, or re-run when you are ready to pause it briefly."
+          fi
+          ;;
         nginx | apache2 | httpd | haproxy | lighttpd | caddy)
           if confirm "Stop '$svc' for about 20 seconds while the certificate is issued?"; then
             if ! systemctl stop "$svc"; then
@@ -2395,7 +2430,7 @@ for raw in sys.argv[1:]:
     rows.append({"status": status, "check": name, "detail": detail})
 fails = sum(1 for r in rows if r["status"] == "FAIL")
 print(json.dumps({
-    "version": "1.2.3",
+    "version": "1.2.4",
     "verdict": "OK" if fails == 0 else "FAIL",
     "failed": fails,
     "checks": rows
@@ -2585,7 +2620,7 @@ main_menu() {
 
 usage() {
   cat <<'HELP_EOF'
-XRV v1.2.3 — hardened GooseRelayVPN server installer
+XRV v1.2.4 — hardened GooseRelayVPN server installer
 
 USAGE
   sudo bash xrv-install.sh                 interactive menu
