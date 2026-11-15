@@ -53,9 +53,9 @@ knowledge.**
 v1.0 was unsafe to run unattended: prompts read the literal text `__line`,
 the client installer never installed a client, the deployment manager had a
 Python syntax error, the systemd sandbox hid `/root`, and HAProxy was started
-with options that recent versions reject. v1.1.0 is a full audit fix. v1.1.1
-adds GitHub community standards, donation information, and a working Pages
-deployment without changing the tunnel protocol.
+with options that recent versions reject. v1.1.0 is a full audit fix. v1.2.0
+adds smart, conflict-aware port selection and independently configurable public
+and private relay ports.
 
 Highlights:
 
@@ -80,7 +80,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 ### VPS
 - Ubuntu 22.04/24.04 or Debian 12, **amd64** or **arm64**, root access.
 - A domain whose **A record** points to the VPS IPv4 (recommended).
-- TCP ports **80** (certificate renewal) and **8443** (tunnel) open in UFW
+- TCP ports **80** (certificate renewal) and your chosen public tunnel port
+  (default **8443**) open in UFW
   **and** in your cloud provider's firewall.
 - About 200 MB of free disk space.
 
@@ -105,7 +106,9 @@ sudo bash xrv-install.sh
 The installer will:
 
 1. Install packages (HAProxy, Certbot, curl, tar, openssl, UFW and friends).
-2. Detect your SSH port and open only what is needed.
+2. Detect occupied TCP/UDP ports, suggest free HTTPS-style choices, detect your
+   SSH port, and open only the public port that is needed. The backend remains
+   private on `127.0.0.1` and is never opened in the firewall.
 3. Ask for your domain and email.
 4. Request a trusted **ECDSA** Let's Encrypt certificate.
 5. Write a dedicated HAProxy TLS 1.3 configuration.
@@ -117,13 +120,15 @@ Non-interactive form:
 
 ```bash
 sudo bash xrv-install.sh --server --non-interactive --yes \
-  --domain vpn.example.com --email you@example.com
+  --domain vpn.example.com --email you@example.com \
+  --public-port 10443 --backend-port 19443
 ```
 
 Useful flags:
 
 ```
 --public-port 8443      change the public TLS port
+--backend-port 9443     change the private, loopback-only relay port
 --upstream-proxy socks5://127.0.0.1:40000
                         route VPS outbound traffic through a local SOCKS5
                         (for example Cloudflare WARP)

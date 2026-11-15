@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.1.1 — hardened GooseRelayVPN server installer and manager.
+# XRV v1.2.0 — hardened GooseRelayVPN server installer and manager.
 #
 # Main server installer for Linux amd64/arm64 VPS.
 # Client installer (Ubuntu amd64 + Termux arm64) lives in xrv-client.sh.
@@ -22,12 +22,12 @@ umask 022
 # =====================================================================
 # VERSION & METADATA
 # =====================================================================
-XRV_VERSION="1.1.1"
+XRV_VERSION="1.2.0"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
 XRV_REPO="jackh0006/XRV-Installer"
-XRV_BRANCH="${XRV_BRANCH:-master}"
+XRV_BRANCH="${XRV_BRANCH:-main}"
 XRV_RAW_BASE="https://raw.githubusercontent.com/${XRV_REPO}/${XRV_BRANCH}"
 CLIENT_SCRIPT_URL="${XRV_CLIENT_SCRIPT_URL:-${XRV_RAW_BASE}/xrv-client.sh}"
 
@@ -40,7 +40,7 @@ RELAY_BASE="https://github.com/Kianmhz/GooseRelayVPN/releases/download/${RELAY_R
 # They are the only code we execute as root, so they are pinned and checked.
 SERVER_SHA256_AMD64="${XRV_SERVER_SHA256_AMD64:-7917f68357bdb745ef058f8c7b01921eeb7ee4079cd8a7040108622cb29eb260}"
 SERVER_SHA256_ARM64="${XRV_SERVER_SHA256_ARM64:-36b6aae93555adf86730da433a4a70452c4b213ca3055a1d01f7de04fa3c73eb}"
-CLIENT_SCRIPT_SHA256="${XRV_CLIENT_SCRIPT_SHA256:-aa5c4687a809bee26f29fb1035544118065782f598bebe53ccdbe0995bba5908}"
+CLIENT_SCRIPT_SHA256="${XRV_CLIENT_SCRIPT_SHA256:-97621cd1a7ca8bbb866f613dfc045d687ddfc2168044749058ad0c399b5d6e03}"
 
 # =====================================================================
 # PATHS
@@ -425,6 +425,7 @@ CLI_DOMAIN="${XRV_DOMAIN:-}"
 CLI_EMAIL="${XRV_EMAIL:-}"
 CLI_MODE=""
 CLI_PUBLIC_PORT="${XRV_PUBLIC_PORT:-}"
+CLI_BACKEND_PORT="${XRV_BACKEND_PORT:-}"
 CLI_UPSTREAM_PROXY="${XRV_UPSTREAM_PROXY:-}"
 
 XRV_DOMAIN="${XRV_DOMAIN:-}"
@@ -445,6 +446,7 @@ load_state() {
   [[ -n "${CLI_EMAIL:-}" ]] && XRV_EMAIL="$CLI_EMAIL"
   [[ -n "${CLI_MODE:-}" ]] && XRV_MODE="$CLI_MODE"
   [[ -n "${CLI_PUBLIC_PORT:-}" ]] && XRV_PUBLIC_PORT="$CLI_PUBLIC_PORT"
+  [[ -n "${CLI_BACKEND_PORT:-}" ]] && XRV_BACKEND_PORT="$CLI_BACKEND_PORT"
   [[ -n "${CLI_UPSTREAM_PROXY:-}" ]] && XRV_UPSTREAM_PROXY="$CLI_UPSTREAM_PROXY"
   if [[ -n "${CLI_DOMAIN:-}" && -z "${CLI_MODE:-}" ]] && valid_domain "$CLI_DOMAIN"; then
     XRV_MODE="tls"
@@ -540,6 +542,31 @@ domain_ipv4s() {
 port_listening() {
   local port="$1"
   ss -ltnH "sport = :${port}" 2>/dev/null | awk 'NF{print; exit}'
+}
+
+port_udp_listening() {
+  local port="$1"
+  ss -lunH "sport = :${port}" 2>/dev/null | awk 'NF{print; exit}'
+}
+
+port_is_free() {
+  # A tunnel needs TCP, but treating a UDP owner as a conflict prevents a
+  # surprising future collision (for example when HTTP/3 is added later).
+  local port="$1"
+  [[ -z "$(port_listening "$port")" && -z "$(port_udp_listening "$port")" ]]
+}
+
+suggest_free_ports() {
+  # Familiar HTTPS alternatives.  The list is deliberately short and avoids
+  # privileged/reserved ports. Print at most three choices for a friendly UI.
+  local p found=0
+  for p in 443 8443 9443 10443 4443 2053 2083 2087 2096; do
+    if port_is_free "$p"; then
+      printf '%s ' "$p"
+      found=$((found + 1))
+      ((found >= 3)) && break
+    fi
+  done
 }
 
 port_owner_commands() {
@@ -768,6 +795,12 @@ UNIT
 }
 
 start_server_service() {
+  # Fail before restarting the relay if another program owns the backend.
+  # An already-running XRV relay is expected during a safe reconfiguration.
+  if ! port_is_free "$XRV_BACKEND_PORT" && ! systemctl is-active --quiet "$SERVER_SERVICE" 2>/dev/null; then
+    error "Private backend port ${XRV_BACKEND_PORT} is already used by: $(port_owner_commands "$XRV_BACKEND_PORT")"
+    die "Choose another backend port with --backend-port."
+  fi
   run "Reloading systemd" systemctl daemon-reload
   run "Enabling the relay service at boot" systemctl enable "$SERVER_SERVICE"
   if ! run "Starting the relay service" systemctl restart "$SERVER_SERVICE"; then
@@ -964,7 +997,13 @@ check_public_port_free() {
   local port="$1"
   local out
   out="$(port_listening "$port")"
-  [[ -z "$out" ]] && return 0
+  if [[ -z "$out" ]]; then
+    if [[ -z "$(port_udp_listening "$port")" ]]; then
+      return 0
+    fi
+    error "UDP port ${port} is already used; choose a port free for both TCP and UDP."
+    return 1
+  fi
   if systemctl is-active --quiet "$HAPROXY_SERVICE" 2>/dev/null; then
     return 0
   fi
@@ -974,6 +1013,7 @@ check_public_port_free() {
     return 0
   fi
   error "TCP port ${port} is already used by: ${owners:-an unknown process}"
+  printf '  Suggested free HTTPS ports: %s\n' "$(suggest_free_ports)" >&2
   printf '  What to do: choose another public port with --public-port, or stop\n' >&2
   printf '  the program above. Two programs cannot own one port.\n' >&2
   return 1
@@ -1706,15 +1746,20 @@ ask_tls_details() {
 }
 
 ask_public_port() {
-  local port
+  local port suggested
   if [[ "$NONINTERACTIVE" == "1" ]]; then
     valid_port "$XRV_PUBLIC_PORT" || die "Invalid public port '$XRV_PUBLIC_PORT'."
     case "$XRV_PUBLIC_PORT" in
-      80 | 9443) die "Public port must not be 80 or 9443. Use 8443 or 443." ;;
+      80) die "Public port must not be 80. Use 8443 or 443." ;;
     esac
-    XRV_BACKEND_PORT="$DEFAULT_BACKEND_PORT"
+    valid_port "$XRV_BACKEND_PORT" || die "Invalid backend port '$XRV_BACKEND_PORT'."
+    [[ "$XRV_PUBLIC_PORT" != "$XRV_BACKEND_PORT" ]] || die "Public and backend ports must be different."
     return 0
   fi
+  suggested="$(suggest_free_ports)"
+  printf '\n%sPort check%s\n' "$BOLD" "$RESET"
+  printf 'XRV needs two different TCP ports: a public HTTPS port and a private backend port.\n'
+  printf 'Free HTTPS-style choices found now: %s\n' "${suggested:-none; choose a custom port}"
   while true; do
     ask port "Public TLS port [${XRV_PUBLIC_PORT:-$DEFAULT_PUBLIC_PORT}]: " "${XRV_PUBLIC_PORT:-$DEFAULT_PUBLIC_PORT}"
     if ! valid_port "$port"; then
@@ -1726,15 +1771,31 @@ ask_public_port() {
         warn "Port 80 is reserved for the certificate renewal check. Choose 8443 or 443."
         continue
         ;;
-      9443)
-        warn "Port 9443 is the private relay backend. Choose 8443 or 443."
+      "$XRV_BACKEND_PORT")
+        warn "The public and private backend ports must be different."
         continue
         ;;
     esac
+    if ! port_is_free "$port" && ! systemctl is-active --quiet "$HAPROXY_SERVICE" 2>/dev/null; then
+      warn "Port $port is already in use. Choose a free port: $(suggest_free_ports)"
+      continue
+    fi
     break
   done
   XRV_PUBLIC_PORT="$port"
-  XRV_BACKEND_PORT="$DEFAULT_BACKEND_PORT"
+  while true; do
+    ask port "Private backend port [${XRV_BACKEND_PORT:-$DEFAULT_BACKEND_PORT}]: " "${XRV_BACKEND_PORT:-$DEFAULT_BACKEND_PORT}"
+    if ! valid_port "$port"; then
+      warn "A port is a whole number from 1 to 65535. Try $DEFAULT_BACKEND_PORT."
+    elif [[ "$port" == "$XRV_PUBLIC_PORT" || "$port" == "80" ]]; then
+      warn "The backend port must differ from the public port and cannot be 80."
+    elif ! port_is_free "$port" && ! systemctl is-active --quiet "$SERVER_SERVICE" 2>/dev/null; then
+      warn "Port $port is already in use. Free choices: $(suggest_free_ports)"
+    else
+      XRV_BACKEND_PORT="$port"
+      break
+    fi
+  done
 }
 
 ask_upstream_proxy() {
@@ -2173,7 +2234,7 @@ for raw in sys.argv[1:]:
     rows.append({"status": status, "check": name, "detail": detail})
 fails = sum(1 for r in rows if r["status"] == "FAIL")
 print(json.dumps({
-    "version": "1.1.1",
+    "version": "1.2.0",
     "verdict": "OK" if fails == 0 else "FAIL",
     "failed": fails,
     "checks": rows
@@ -2363,7 +2424,7 @@ main_menu() {
 
 usage() {
   cat <<'HELP_EOF'
-XRV v1.1.1 — hardened GooseRelayVPN server installer
+XRV v1.2.0 — hardened GooseRelayVPN server installer
 
 USAGE
   sudo bash xrv-install.sh                 interactive menu
@@ -2377,6 +2438,7 @@ NON-INTERACTIVE SERVER OPTIONS
   --domain NAME          domain name for TLS (e.g. vpn.example.com)
   --email ADDRESS        Let's Encrypt contact address
   --public-port PORT     public TLS port (default 8443)
+  --backend-port PORT    private relay port (default 9443; must differ)
   --http                 HTTP-only mode (no domain/certificate; not recommended)
   --tls                  force TLS mode when a saved state says HTTP
   --upstream-proxy URL   optional socks5://127.0.0.1:40000 for outbound routing
@@ -2461,6 +2523,11 @@ main() {
         CLI_PUBLIC_PORT="$1"
         XRV_PUBLIC_PORT="$1"
         ;;
+      --backend-port)
+        shift || die "--backend-port needs a value"
+        CLI_BACKEND_PORT="$1"
+        XRV_BACKEND_PORT="$1"
+        ;;
       --upstream-proxy)
         shift || die "--upstream-proxy needs a value"
         CLI_UPSTREAM_PROXY="$1"
@@ -2505,9 +2572,10 @@ main() {
           valid_email "$XRV_EMAIL" || die "--non-interactive needs a valid --email."
         fi
         valid_port "$XRV_PUBLIC_PORT" || die "Invalid --public-port."
+        valid_port "$XRV_BACKEND_PORT" || die "Invalid --backend-port."
+        [[ "$XRV_PUBLIC_PORT" != "$XRV_BACKEND_PORT" ]] || die "--public-port and --backend-port must be different."
         case "$XRV_PUBLIC_PORT" in
           80) die "Port 80 is reserved for Let's Encrypt. Use 8443 or 443." ;;
-          9443) die "Port 9443 is the private relay backend. Use 8443 or 443." ;;
         esac
       fi
       install_server_flow
