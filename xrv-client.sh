@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.2.0 — standalone GooseRelayVPN client installer for
+# XRV v1.2.2 — standalone GooseRelayVPN client installer for
 # Ubuntu/Linux amd64 (also Linux arm64) and Android Termux arm64.
 #
 # This file is self-contained. You can run it directly:
@@ -26,7 +26,7 @@ umask 077
 # =====================================================================
 # VERSION & PINNED RELEASE
 # =====================================================================
-XRV_VERSION="1.2.0"
+XRV_VERSION="1.2.2"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
@@ -48,7 +48,9 @@ GOOGLE_EDGES=("216.239.32.120" "216.239.34.120" "216.239.36.120" "216.239.38.120
 HOME_DIR="${XRV_CLIENT_HOME:-$HOME/xrv}"
 RELAY_INPUT="${XRV_RELAY_URL:-}"
 RELAY_HOST="${XRV_RELAY_HOST:-}"
-RELAY_PORT="${XRV_RELAY_PORT:-8443}"
+RELAY_PORT="${XRV_RELAY_PORT:-}"
+RELAY_PORT_EXPLICIT=0
+[[ -n "$RELAY_PORT" ]] && RELAY_PORT_EXPLICIT=1
 RELAY_SCHEME="${XRV_RELAY_SCHEME:-}"
 RELAY_URL=""
 RELAY_BASE_URL=""
@@ -491,11 +493,13 @@ parse_relay_value() {
       RELAY_HOST="${hostport%%\]*}"
       if [[ "$hostport" == *"]:"* ]]; then
         RELAY_PORT="${hostport##*]:}"
+        RELAY_PORT_EXPLICIT=1
       fi
     else
       RELAY_HOST="${rest%%:*}"
       if [[ "$rest" == *:* ]]; then
         RELAY_PORT="${rest##*:}"
+        RELAY_PORT_EXPLICIT=1
       fi
     fi
   else
@@ -506,6 +510,68 @@ parse_relay_value() {
       RELAY_HOST="$v"
     fi
   fi
+}
+
+relay_base_for_port() {
+  local port="$1"
+  if [[ "$RELAY_SCHEME" == "https" && "$port" == "443" ]] ||
+    [[ "$RELAY_SCHEME" == "http" && "$port" == "80" ]]; then
+    printf '%s://%s' "$RELAY_SCHEME" "$RELAY_HOST"
+  else
+    printf '%s://%s:%s' "$RELAY_SCHEME" "$RELAY_HOST" "$port"
+  fi
+}
+
+relay_health_code() {
+  local port="$1" base code
+  base="$(relay_base_for_port "$port")"
+  code="$(curl -sS --noproxy '*' --connect-timeout 2 --max-time 4 -o /dev/null -w '%{http_code}' "${base}/healthz" 2>/dev/null || true)"
+  [[ "$code" == "200" ]]
+}
+
+discover_relay_port() {
+  # These are public HTTPS-style ports offered by XRV. This is not a generic
+  # port scan: each candidate is checked only for XRV's public /healthz route.
+  local port
+  for port in 10443 8443 4443 443; do
+    if relay_health_code "$port"; then
+      printf '%s' "$port"
+      return 0
+    fi
+  done
+  return 1
+}
+
+build_relay_url() {
+  RELAY_BASE_URL="$(relay_base_for_port "$RELAY_PORT")"
+  RELAY_URL="${RELAY_BASE_URL}/tunnel"
+}
+
+choose_relay_port() {
+  local found=""
+  if [[ "$RELAY_PORT_EXPLICIT" == "1" ]]; then
+    valid_port "$RELAY_PORT" || die "Relay port must be a number from 1 to 65535."
+    return 0
+  fi
+
+  info "Looking for your XRV relay on familiar HTTPS ports..."
+  found="$(discover_relay_port || true)"
+  if [[ -n "$found" ]]; then
+    ok "Found the XRV health endpoint on TCP $found"
+  else
+    warn "Could not detect the relay port automatically. Ask the server owner if unsure."
+  fi
+
+  if [[ "$NONINTERACTIVE" == "1" && -z "$found" ]]; then
+    die "--non-interactive needs --relay-port when the relay port cannot be detected."
+  fi
+
+  while true; do
+    ask RELAY_PORT "Relay port [${found:-8443}]: " "${found:-8443}"
+    valid_port "$RELAY_PORT" && break
+    warn "A port is a number from 1 to 65535."
+  done
+  RELAY_PORT_EXPLICIT=1
 }
 
 collect_relay() {
@@ -553,25 +619,23 @@ collect_relay() {
     fi
   fi
 
-  if [[ -z "$RELAY_PORT" ]]; then
-    RELAY_PORT="8443"
-  fi
-  while ! valid_port "$RELAY_PORT"; do
-    warn "A port is a number from 1 to 65535 (the usual one is 8443)."
-    ask RELAY_PORT "Relay port [8443]: " "8443"
-  done
-
-  if [[ "$RELAY_SCHEME" == "https" && "$RELAY_PORT" == "443" ]] ||
-    [[ "$RELAY_SCHEME" == "http" && "$RELAY_PORT" == "80" ]]; then
-    RELAY_BASE_URL="${RELAY_SCHEME}://${RELAY_HOST}"
-  else
-    RELAY_BASE_URL="${RELAY_SCHEME}://${RELAY_HOST}:${RELAY_PORT}"
-  fi
-  RELAY_URL="${RELAY_BASE_URL}/tunnel"
+  choose_relay_port
+  build_relay_url
   ok "Relay URL: $RELAY_URL"
 
   if ((NO_HEALTH == 0)); then
-    check_relay_health
+    while ! check_relay_health; do
+      if ! confirm "Change the relay port and check again?" yes; then
+        if confirm "Continue and configure the client anyway?" no; then
+          break
+        fi
+        die "Stopped at your request. Fix the relay or use the correct port, then run again."
+      fi
+      RELAY_PORT_EXPLICIT=0
+      choose_relay_port
+      build_relay_url
+      ok "Relay URL: $RELAY_URL"
+    done
   fi
 }
 
@@ -588,6 +652,8 @@ check_relay_health() {
     warn "Relay answered HTTP $code."
     printf '  What this means: something answered, but not the healthy relay.\n' >&2
     printf '  Check the server with: sudo xrv-install.sh --check\n' >&2
+    rm -f "$out"
+    return 1
   else
     warn "Could not reach $url"
     printf '  Common reasons, easiest first:\n' >&2
@@ -598,11 +664,11 @@ check_relay_health() {
       printf '   4. The certificate is not trusted, or the name does not match.\n' >&2
       printf '      A quick look: curl -v %s/healthz\n' "$RELAY_BASE_URL" >&2
     fi
-    if ! confirm "Continue and configure the client anyway?" no; then
-      die "Stopped at your request. Fix the relay, then run the installer again."
-    fi
+    rm -f "$out"
+    return 1
   fi
   rm -f "$out"
+  return 0
 }
 
 probe_edges() {
@@ -1612,7 +1678,7 @@ uninstall_flow() {
 # =====================================================================
 usage() {
   cat <<'HELP_EOF'
-XRV v1.2.0 — standalone GooseRelayVPN client installer
+XRV v1.2.2 — standalone GooseRelayVPN client installer
 Linux amd64 · Linux arm64 · Android Termux arm64
 
 USAGE
@@ -1624,7 +1690,7 @@ USAGE
 OPTIONS
   --relay HOST|URL       relay domain, IP, or full https://host:port/tunnel URL
   --relay-host HOST      relay domain or IP
-  --relay-port PORT      relay port (default 8443)
+  --relay-port PORT      relay port (otherwise detected, then always confirmed)
   --relay-scheme http|https
   --deployment ID[:ACCT] one deployment ID (repeat for more)
   --deployments LIST     comma-separated IDs (ID:ACCT, ID:ACCT)
@@ -1688,6 +1754,7 @@ main() {
       --relay-port)
         shift || die "--relay-port needs a value"
         RELAY_PORT="$1"
+        RELAY_PORT_EXPLICIT=1
         ;;
       --relay-scheme)
         shift || die "--relay-scheme needs a value"

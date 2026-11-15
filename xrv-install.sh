@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.2.1 — hardened GooseRelayVPN server installer and manager.
+# XRV v1.2.2 — hardened GooseRelayVPN server installer and manager.
 #
 # Main server installer for Linux amd64/arm64 VPS.
 # Client installer (Ubuntu amd64 + Termux arm64) lives in xrv-client.sh.
@@ -22,7 +22,7 @@ umask 022
 # =====================================================================
 # VERSION & METADATA
 # =====================================================================
-XRV_VERSION="1.2.1"
+XRV_VERSION="1.2.2"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
@@ -40,7 +40,7 @@ RELAY_BASE="https://github.com/Kianmhz/GooseRelayVPN/releases/download/${RELAY_R
 # They are the only code we execute as root, so they are pinned and checked.
 SERVER_SHA256_AMD64="${XRV_SERVER_SHA256_AMD64:-7917f68357bdb745ef058f8c7b01921eeb7ee4079cd8a7040108622cb29eb260}"
 SERVER_SHA256_ARM64="${XRV_SERVER_SHA256_ARM64:-36b6aae93555adf86730da433a4a70452c4b213ca3055a1d01f7de04fa3c73eb}"
-CLIENT_SCRIPT_SHA256="${XRV_CLIENT_SCRIPT_SHA256:-97621cd1a7ca8bbb866f613dfc045d687ddfc2168044749058ad0c399b5d6e03}"
+CLIENT_SCRIPT_SHA256="${XRV_CLIENT_SCRIPT_SHA256:-b6145f624b912ab6303ec4117291c611519f945f6ed10ee1e66dfc1fb318e949}"
 
 # =====================================================================
 # PATHS
@@ -2317,7 +2317,7 @@ for raw in sys.argv[1:]:
     rows.append({"status": status, "check": name, "detail": detail})
 fails = sum(1 for r in rows if r["status"] == "FAIL")
 print(json.dumps({
-    "version": "1.2.1",
+    "version": "1.2.2",
     "verdict": "OK" if fails == 0 else "FAIL",
     "failed": fails,
     "checks": rows
@@ -2507,7 +2507,7 @@ main_menu() {
 
 usage() {
   cat <<'HELP_EOF'
-XRV v1.2.1 — hardened GooseRelayVPN server installer
+XRV v1.2.2 — hardened GooseRelayVPN server installer
 
 USAGE
   sudo bash xrv-install.sh                 interactive menu
