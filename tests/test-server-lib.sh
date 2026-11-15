@@ -22,6 +22,7 @@ assert_true "accepts a valid email" valid_email admin@example.com
 assert_false "rejects a bad email" valid_email admin@
 assert_true "accepts a port" valid_port 8443
 assert_false "rejects a bad port" valid_port 70000
+assert_true "default public and backend ports differ" test "$DEFAULT_PUBLIC_PORT" != "$DEFAULT_BACKEND_PORT"
 assert_true "accepts a key" valid_tunnel_key "$(printf 'b%.0s' {1..64})"
 assert_false "rejects a short key" valid_tunnel_key b
 assert_true "accepts an https relay URL" valid_relay_url https://vpn.example.com:8443/tunnel

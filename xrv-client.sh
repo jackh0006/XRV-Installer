@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.1.1 — standalone GooseRelayVPN client installer for
+# XRV v1.2.0 — standalone GooseRelayVPN client installer for
 # Ubuntu/Linux amd64 (also Linux arm64) and Android Termux arm64.
 #
 # This file is self-contained. You can run it directly:
 #   bash xrv-client.sh
 # or straight from the repo:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/jackh0006/XRV-Installer/master/xrv-client.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/jackh0006/XRV-Installer/main/xrv-client.sh)
 #
 # It downloads the official GooseRelayVPN client, checks its pinned SHA-256,
 # asks a few plain-language questions, writes a safe config, and gives you
@@ -26,12 +26,12 @@ umask 077
 # =====================================================================
 # VERSION & PINNED RELEASE
 # =====================================================================
-XRV_VERSION="1.1.1"
+XRV_VERSION="1.2.0"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
 XRV_REPO="jackh0006/XRV-Installer"
-XRV_BRANCH="${XRV_BRANCH:-master}"
+XRV_BRANCH="${XRV_BRANCH:-main}"
 RELAY_RELEASE="${XRV_RELAY_RELEASE:-v1.7.1}"
 RELAY_BASE="https://github.com/Kianmhz/GooseRelayVPN/releases/download/${RELAY_RELEASE}"
 
@@ -1612,7 +1612,7 @@ uninstall_flow() {
 # =====================================================================
 usage() {
   cat <<'HELP_EOF'
-XRV v1.1.1 — standalone GooseRelayVPN client installer
+XRV v1.2.0 — standalone GooseRelayVPN client installer
 Linux amd64 · Linux arm64 · Android Termux arm64
 
 USAGE
