@@ -4,6 +4,22 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-11-15
+
+### Added
+
+- Smart server port selection: it inspects TCP and UDP listeners, names a
+  conflicting TCP process, and suggests free familiar HTTPS-style ports.
+- `--backend-port PORT` and an interactive private-backend prompt. The backend
+  remains bound only to `127.0.0.1` and is never opened by firewall automation.
+
+### Fixed
+
+- The companion client script URL now defaults to the repository's `main`
+  branch, matching the documented default branch.
+- Port collisions are detected before a service restart, avoiding opaque
+  systemd failures.
+
 ## [1.1.1] — 2026-11-13
 
 GitHub repository standards, donation information, and documentation deploy.
@@ -134,5 +150,6 @@ Initial public release.
 - Pinned upstream v1.7.1 release.
 
 [1.1.1]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.0...v1.1.1
+[1.2.0]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.1...v1.2.0
 [1.1.0]: https://github.com/jackh0006/XRV-Installer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jackh0006/XRV-Installer/releases/tag/v1.0.0
