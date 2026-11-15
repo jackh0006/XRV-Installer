@@ -8,8 +8,9 @@
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **A private SOCKS5 tunnel that travels inside ordinary Google HTTPS.**
-One small VPS is the exit. Your devices run a client. Google only sees encrypted
-traffic to a Google address, and the tunnel key never leaves your machines.
+One small VPS is the exit. Your devices run a client. Google forwards encrypted
+payloads but can see the relay address, account and traffic metadata. The tunnel
+key stays on your server and client.
 
 This repository is the **installer** for the upstream
 [GooseRelayVPN](https://github.com/Kianmhz/GooseRelayVPN) v1.7.1 release.
@@ -303,6 +304,16 @@ Add `--no-start` in automation, then start with `~/xrv/start-xrv.sh`.
 ---
 
 ## Apps Script (the Google side)
+
+The VPS now prints the complete setup guide and saves it beside the script:
+
+```bash
+sudo cat /etc/xrv/Code.gs
+sudo cat /etc/xrv/GOOGLE-SETUP.txt
+```
+
+See [Google setup and connection verification](docs/GOOGLE-SETUP.md) for
+deployment, privacy limits, quota handling and end-to-end testing.
 
 The client writes `~/xrv/Code.gs` (the server writes `/etc/xrv/Code.gs`).
 The relay URL is already inside it.

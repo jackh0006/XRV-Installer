@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq haproxy python3 curl openssl
+          sudo apt-get install -y -qq haproxy python3 curl openssl nodejs
       - name: Run the suite
         env:
           HAPROXY_BIN: /usr/sbin/haproxy

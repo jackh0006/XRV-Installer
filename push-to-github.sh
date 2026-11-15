@@ -10,7 +10,7 @@ cd "$ROOT" || exit 1
 REPO_OWNER="jackh0006"
 REPO_NAME="XRV-Installer"
 REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
-VERSION="${XRV_VERSION:-1.2.2}"
+VERSION="${XRV_VERSION:-1.2.3}"
 
 echo "=== XRV v${VERSION} release helper ==="
 echo "Repository: ${REPO_URL}"
