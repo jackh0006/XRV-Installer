@@ -33,6 +33,17 @@ assert_false "rejects an HTTP upstream proxy" valid_socks_proxy http://127.0.0.1
 assert_true "accepts an explicit systemd service" valid_systemd_service_name hedioum.service
 assert_false "rejects unsafe systemd service text" valid_systemd_service_name 'hedioum.service;reboot'
 
+printf '\n== port 80 service detection\n'
+systemctl() {
+  case "$1" in
+    list-units) printf 'hedioum.service loaded active running tunnel\n' ;;
+    show) printf '4242\n' ;;
+  esac
+}
+ss() { printf 'LISTEN 0 1 *:80 *:* users:(("hedioum-tunnel",pid=4242,fd=16))\n'; }
+assert_eq "hedioum.service" "$(port80_conflicts)" "maps a port-80 listener to its systemd service"
+unset -f systemctl ss
+
 printf '\n== server config generation\n'
 KEY="$(printf 'c%.0s' {1..64})"
 TMP="$(mktemp -d)"

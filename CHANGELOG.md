@@ -4,6 +4,14 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [1.2.4] — 2026-11-15
+
+- Port-80 collision handling maps listener processes to their running systemd
+  units, so `hedioum-tunnel` is safely recognized as `hedioum.service`.
+- Certificate issuance asks before pausing that exact service, restores it
+  after the ACME attempt, and records renewal hooks only after a successful
+  certificate request.
+
 ## [1.2.3] — 2026-11-15
 
 - VPS completion screen includes the full Google setup and verification guide,
@@ -186,6 +194,7 @@ Initial public release.
 - Pinned upstream v1.7.1 release.
 
 [1.1.1]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.0...v1.1.1
+[1.2.4]: https://github.com/jackh0006/XRV-Installer/compare/v1.2.3...v1.2.4
 [1.2.2]: https://github.com/jackh0006/XRV-Installer/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/jackh0006/XRV-Installer/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.1...v1.2.0
