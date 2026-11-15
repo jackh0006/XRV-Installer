@@ -59,6 +59,9 @@ and private relay ports. v1.2.1 safely reuses a healthy certificate without
 touching port 80, and can pause one explicitly named systemd service only when
 fresh ACME validation is required.
 
+v1.2.2 makes the client detect a healthy XRV public port first, then ask you
+to confirm it instead of silently assuming `8443`.
+
 Highlights:
 
 | Area | v1.1.0 |

@@ -4,6 +4,16 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [1.2.2] — 2026-11-15
+
+### Fixed
+
+- The client no longer silently assumes TCP 8443 when only a relay hostname is
+  supplied. It checks XRV's familiar public HTTPS ports, reports a healthy
+  endpoint when found, and always asks the user to confirm or replace the port.
+- A failed relay health check now offers to correct and re-check the port before
+  any client configuration is written.
+
 ## [1.2.1] — 2026-11-15
 
 ### Added
@@ -166,6 +176,7 @@ Initial public release.
 - Pinned upstream v1.7.1 release.
 
 [1.1.1]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.0...v1.1.1
+[1.2.2]: https://github.com/jackh0006/XRV-Installer/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/jackh0006/XRV-Installer/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.1...v1.2.0
 [1.1.0]: https://github.com/jackh0006/XRV-Installer/compare/v1.0.0...v1.1.0

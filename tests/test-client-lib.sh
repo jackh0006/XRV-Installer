@@ -27,6 +27,8 @@ assert_false "rejects an editor script id" valid_deployment_id "1AbCdEfGhIjKlMnO
 assert_true "accepts a port" valid_port 8443
 assert_false "rejects port 0" valid_port 0
 assert_false "rejects port 70000" valid_port 70000
+assert_eq "https://vpn.example.com:10443" "$(RELAY_HOST=vpn.example.com RELAY_SCHEME=https relay_base_for_port 10443)" "builds a custom HTTPS relay port"
+assert_eq "https://vpn.example.com" "$(RELAY_HOST=vpn.example.com RELAY_SCHEME=https relay_base_for_port 443)" "omits default HTTPS port"
 
 printf '\n== deployment ID normalisation\n'
 assert_eq "AKfycbTEST_123" \

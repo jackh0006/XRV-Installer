@@ -33,7 +33,7 @@ jobs:
       - name: Generate checksums
         run: |
           sha256sum xrv-install.sh xrv-client.sh README.md CHANGELOG.md \
-            RELEASE_NOTES_v1.2.1.md DONATE.md SUPPORT.md LICENSE SECURITY.md \
+            RELEASE_NOTES_v1.2.2.md DONATE.md SUPPORT.md LICENSE SECURITY.md \
             CONTRIBUTING.md CODE_OF_CONDUCT.md docs/ARCHITECTURE.md docs/TROUBLESHOOTING.md docs/USER-GUIDE.md > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
@@ -46,7 +46,7 @@ jobs:
             SHA256SUMS.txt
             README.md
             CHANGELOG.md
-            RELEASE_NOTES_v1.2.1.md
+            RELEASE_NOTES_v1.2.2.md
             DONATE.md
             SUPPORT.md
             LICENSE
