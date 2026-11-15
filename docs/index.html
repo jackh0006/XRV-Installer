@@ -19,6 +19,7 @@
     <p>
       <a class="button" href="https://github.com/jackh0006/XRV-Installer">GitHub</a>
       <a class="button" href="https://github.com/jackh0006/XRV-Installer/releases/latest">Download</a>
+      <a class="button" href="QUICK-START.html">Quick Start</a>
       <a class="button" href="USER-GUIDE.html">Plain-language guide</a>
     </p>
   </header>
@@ -28,6 +29,7 @@
       <h2>Start here</h2>
       <ul class="cards">
         <li><a href="USER-GUIDE.html"><strong>Complete guide</strong><span>Every step, every word, every error — no networking knowledge assumed.</span></a></li>
+        <li><a href="QUICK-START.html"><strong>Quick Start</strong><span>Four short boxes: domain, server, Google forwarder, and client.</span></a></li>
         <li><a href="usage.html"><strong>Server help</strong><span>Every flag and menu option for <code>xrv-install.sh</code>.</span></a></li>
         <li><a href="client-usage.html"><strong>Client help</strong><span>Every flag and option for <code>xrv-client.sh</code>.</span></a></li>
         <li><a href="ARCHITECTURE.html"><strong>Architecture</strong><span>Components, ports, files, trust boundaries and systemd hardening.</span></a></li>
@@ -37,11 +39,13 @@
     </section>
 
     <section>
-      <h2>Install in one line</h2>
+      <h2>Install in two safe commands</h2>
       <p>Server, on Ubuntu/Debian amd64 or arm64:</p>
-      <pre><code>sudo bash xrv-install.sh</code></pre>
+      <pre><code>curl -fsSLO https://raw.githubusercontent.com/jackh0006/XRV-Installer/main/xrv-install.sh
+sudo bash xrv-install.sh</code></pre>
       <p>Client, on Linux or Termux arm64:</p>
-      <pre><code>bash xrv-client.sh</code></pre>
+      <pre><code>curl -fsSLO https://raw.githubusercontent.com/jackh0006/XRV-Installer/main/xrv-client.sh
+bash xrv-client.sh</code></pre>
     </section>
 
     <section>

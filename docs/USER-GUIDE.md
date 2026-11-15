@@ -52,7 +52,7 @@ You will see these words in the installer. Here is what they mean:
 | **VPS** | A small computer you rent that stays on all the time. |
 | **Domain** | A nickname for that computer, like `vpn.example.com`. |
 | **IP address** | The computer's number, like `203.0.113.10`. |
-| **Port** | A door number on the computer. XRV uses `8443` by default. |
+| **Port** | A door number on the computer. XRV offers a free public port, and the client checks then confirms it. |
 | **Certificate** | An ID badge that proves the domain really belongs to your server. |
 | **Tunnel key** | A 64-character password. The only key to your tunnel. |
 | **Deployment ID** | A long code from Google that points to your Apps Script. It starts with `AKfycb`. |
@@ -103,7 +103,7 @@ firewall panel.
 |---|---|
 | SSH port (usually 22) | So you can log in. |
 | 80 | Let's Encrypt uses it for a few seconds to prove you own the domain. |
-| 8443 | The encrypted tunnel. You can choose 443 instead. |
+| Your chosen public tunnel port | The encrypted tunnel. XRV offers a free HTTPS-style choice. |
 
 ### Google
 
@@ -159,7 +159,7 @@ The installer will ask for:
 1. **Domain** — type `vpn.example.com`.
 2. **Email** — a real address. Let's Encrypt uses it only for certificate
    warnings.
-3. **Public port** — press Enter for `8443`.
+3. **Public port** — accept a free choice XRV offers, or type the one you chose.
 4. **Upstream proxy** — press Enter for none, unless you already run a local
    SOCKS5 proxy such as Cloudflare WARP.
 

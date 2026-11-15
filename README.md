@@ -34,7 +34,67 @@ Browser / app
 every step, every word, and every error without assuming any networking
 knowledge.**
 
+## Quick Start — server first, client second
+
+Do these boxes in order. Do not paste the tunnel key into a chat, screenshot,
+or public document.
+
+### 1. Prepare your domain
+
+In your domain provider's DNS page, create an **A** record from a name such as
+`vpn.example.com` to your VPS IPv4 address. Wait until it resolves. Open TCP
+**80** and the public tunnel port you choose in your cloud firewall.
+
+### 2. Install the server (on the VPS)
+
+Log in to the VPS, download the installer, then run it. Keeping download and
+execution as two commands means the installer can ask you questions normally.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/jackh0006/XRV-Installer/main/xrv-install.sh
+sudo bash xrv-install.sh
+```
+
+Choose **Install or update the server**. Enter your domain and email. When it
+offers a public port, accept a detected free choice or type your own; do **not**
+use the private backend port outside the server. At the end, copy these two
+values somewhere private:
+
+```bash
+sudo cat /etc/xrv/tunnel_key
+sudo cat /etc/xrv/Code.gs
+```
+
+If another trusted service owns TCP 80, keep it safe and use its exact systemd
+unit only when XRV asks for a new certificate, for example:
+
+```bash
+sudo bash xrv-install.sh --server --acme-stop-service hedioum.service
+```
+
+### 3. Create the Google forwarder
+
+Open <https://script.google.com>, make a new project, replace its sample code
+with the entire private `Code.gs` file above, then deploy it as a **Web app**.
+Copy the deployment URL/ID beginning with `AKfycb`. The full walkthrough is in
+[Apps Script](#apps-script-the-google-side).
+
+### 4. Install the client (on Linux or Android Termux)
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/jackh0006/XRV-Installer/main/xrv-client.sh
+bash xrv-client.sh
+```
+
+Enter your VPS domain. The client checks XRV's safe public HTTPS ports, then
+asks you to confirm the detected port. Paste the `AKfycb...` deployment ID and
+the private tunnel key when asked. Finally, set your browser/app to SOCKS5
+`127.0.0.1:1080`.
+
+For a printable, one-screen version, see [Quick Start](docs/QUICK-START.md).
+
 **Quick links:**
+[Quick Start](docs/QUICK-START.md) ·
 [Simple guide](docs/USER-GUIDE.md) ·
 [Documentation site](https://jackh0006.github.io/XRV-Installer/) ·
 [Install](#server-install-vps) ·
@@ -181,7 +241,8 @@ bash xrv-client.sh
 It asks for:
 
 1. **Relay domain or IP** — example `vpn.example.com`.
-2. **Relay port** — default `8443`.
+2. **Relay port** — the client checks familiar XRV public HTTPS ports first,
+   then asks you to confirm or type the port.
 3. **Deployment IDs** — paste one or more `AKfycb...` values (or full `/exec` links).
 4. **Tunnel key** — hidden input, 64 hex characters.
 5. **Local SOCKS port** — default `1080`.
