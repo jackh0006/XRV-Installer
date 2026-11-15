@@ -4,6 +4,16 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [1.2.3] — 2026-11-15
+
+- VPS completion screen includes the full Google setup and verification guide,
+  saved as GOOGLE-SETUP.txt and available again through --google-guide.
+- Generated forwarders explicitly verify TLS, omit upstream error bodies,
+  remove the undocumented deadline option, and avoid storage calls when
+  invocation counting is disabled.
+- Added executable tests for both Google templates and documented Google's
+  quotas, metadata visibility, deployment requirements and verification limits.
+
 ## [1.2.2] — 2026-11-15
 
 ### Fixed

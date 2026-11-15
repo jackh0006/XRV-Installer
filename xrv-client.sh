@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.2.2 — standalone GooseRelayVPN client installer for
+# XRV v1.2.3 — standalone GooseRelayVPN client installer for
 # Ubuntu/Linux amd64 (also Linux arm64) and Android Termux arm64.
 #
 # This file is self-contained. You can run it directly:
@@ -26,7 +26,7 @@ umask 077
 # =====================================================================
 # VERSION & PINNED RELEASE
 # =====================================================================
-XRV_VERSION="1.2.2"
+XRV_VERSION="1.2.3"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
@@ -1008,16 +1008,16 @@ function doPost(e) {
         payload: payload,
         muteHttpExceptions: true,
         followRedirects: false,
-        deadline: 30
+        validateHttpsCertificates: true
       });
       const status = resp.getResponseCode();
       const text = resp.getContentText();
       if (status === 200) {
         return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.TEXT);
       }
-      lastError = 'upstream status ' + status + ': ' + text.slice(0, 1024);
+      lastError = 'upstream status ' + status;
     } catch (err) {
-      lastError = 'upstream fetch error: ' + String(err);
+      lastError = 'upstream fetch failed; check relay health, TLS and Google quotas';
     }
   }
   throw new Error(lastError);
@@ -1027,9 +1027,10 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.legacy === '1') {
     return ContentService.createTextOutput('XRV forwarder OK').setMimeType(ContentService.MimeType.TEXT);
   }
-  const props = PropertiesService.getScriptProperties();
   const today = pacificDateKey_();
-  const count = parseInt(props.getProperty('count_' + today) || '0', 10);
+  const count = ENABLE_INVOCATION_COUNTING
+    ? parseInt(PropertiesService.getScriptProperties().getProperty('count_' + today) || '0', 10)
+    : 0;
   return ContentService.createTextOutput(JSON.stringify({
     ok: true, date: today, count: count,
     version: FORWARDER_VERSION, protocol: PROTOCOL_VERSION
@@ -1678,7 +1679,7 @@ uninstall_flow() {
 # =====================================================================
 usage() {
   cat <<'HELP_EOF'
-XRV v1.2.2 — standalone GooseRelayVPN client installer
+XRV v1.2.3 — standalone GooseRelayVPN client installer
 Linux amd64 · Linux arm64 · Android Termux arm64
 
 USAGE

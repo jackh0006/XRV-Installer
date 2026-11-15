@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.2.2 — hardened GooseRelayVPN server installer and manager.
+# XRV v1.2.3 — hardened GooseRelayVPN server installer and manager.
 #
 # Main server installer for Linux amd64/arm64 VPS.
 # Client installer (Ubuntu amd64 + Termux arm64) lives in xrv-client.sh.
@@ -22,7 +22,7 @@ umask 022
 # =====================================================================
 # VERSION & METADATA
 # =====================================================================
-XRV_VERSION="1.2.2"
+XRV_VERSION="1.2.3"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
@@ -40,7 +40,7 @@ RELAY_BASE="https://github.com/Kianmhz/GooseRelayVPN/releases/download/${RELAY_R
 # They are the only code we execute as root, so they are pinned and checked.
 SERVER_SHA256_AMD64="${XRV_SERVER_SHA256_AMD64:-7917f68357bdb745ef058f8c7b01921eeb7ee4079cd8a7040108622cb29eb260}"
 SERVER_SHA256_ARM64="${XRV_SERVER_SHA256_ARM64:-36b6aae93555adf86730da433a4a70452c4b213ca3055a1d01f7de04fa3c73eb}"
-CLIENT_SCRIPT_SHA256="${XRV_CLIENT_SCRIPT_SHA256:-b6145f624b912ab6303ec4117291c611519f945f6ed10ee1e66dfc1fb318e949}"
+CLIENT_SCRIPT_SHA256="${XRV_CLIENT_SCRIPT_SHA256:-04127ffb253f9c6ddac6e60665036450a01ea8f76ab1bfeea55aa5359186e959}"
 
 # =====================================================================
 # PATHS
@@ -1671,16 +1671,16 @@ function doPost(e) {
         payload: payload,
         muteHttpExceptions: true,
         followRedirects: false,
-        deadline: 30
+        validateHttpsCertificates: true
       });
       const status = resp.getResponseCode();
       const text = resp.getContentText();
       if (status === 200) {
         return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.TEXT);
       }
-      lastError = 'upstream status ' + status + ': ' + text.slice(0, 1024);
+      lastError = 'upstream status ' + status;
     } catch (err) {
-      lastError = 'upstream fetch error: ' + String(err);
+      lastError = 'upstream fetch failed; check relay health, TLS and Google quotas';
     }
   }
   throw new Error(lastError);
@@ -1690,9 +1690,10 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.legacy === '1') {
     return ContentService.createTextOutput('XRV forwarder OK').setMimeType(ContentService.MimeType.TEXT);
   }
-  const props = PropertiesService.getScriptProperties();
   const today = pacificDateKey_();
-  const count = parseInt(props.getProperty('count_' + today) || '0', 10);
+  const count = ENABLE_INVOCATION_COUNTING
+    ? parseInt(PropertiesService.getScriptProperties().getProperty('count_' + today) || '0', 10)
+    : 0;
   return ContentService.createTextOutput(JSON.stringify({
     ok: true, date: today, count: count,
     version: FORWARDER_VERSION, protocol: PROTOCOL_VERSION
@@ -1724,7 +1725,93 @@ function pruneStaleCounts_(props, today) {
 CODE_EOF
   sed -i "s|RELAY_URL_PLACEHOLDER|${relay_url}|" "$dest"
   chmod 644 "$dest"
+  if [[ "$dest" == "$CODE_GS_FILE" ]]; then
+    google_setup_guide "$relay_url" >"${STATE_DIR}/GOOGLE-SETUP.txt"
+    chmod 600 "${STATE_DIR}/GOOGLE-SETUP.txt"
+  fi
   ok "Apps Script file written: $dest"
+}
+
+google_setup_guide() {
+  local relay_url="${1:-http://${XRV_DOMAIN}:${XRV_PUBLIC_PORT}/tunnel}"
+  if [[ -z "${1:-}" && "$XRV_MODE" == "tls" ]]; then
+    relay_url="https://${XRV_DOMAIN}:${XRV_PUBLIC_PORT}/tunnel"
+  fi
+  cat <<GUIDE
+XRV: Google setup, then your client
+
+Your relay URL: $relay_url
+Use this exact URL, including its public port. Never use the private backend port.
+
+1. On the VPS, display the Google script:
+   sudo cat $CODE_GS_FILE
+   Copy ALL of the output into Code.gs in a new project at:
+   https://script.google.com
+   The relay address is already filled in. Do not add your tunnel key to Google.
+
+2. Save, then choose Deploy > New deployment > gear icon > Web app.
+   Execute as: Me. Who has access: Anyone (anonymous access).
+   Authorize only your own reviewed project. External requests are needed;
+   this forwarder does not need Gmail, Drive or Contacts access.
+   If your organization's account blocks anonymous apps, ask its administrator.
+
+3. Copy the deployed /exec URL (or its AKfycb... deployment ID).
+   Do not use the editor URL, project ID or /dev test URL.
+   Open /exec in a signed-out/private browser: expect JSON with ok:true.
+   That tests Google deployment only, NOT the relay or the full tunnel.
+   Command-line alternative (replace DEPLOYMENT_ID):
+   curl -fSL 'https://script.google.com/macros/s/DEPLOYMENT_ID/exec'
+   Google's ContentService redirect is normal; curl needs -L.
+
+4. On your Linux computer or Termux device:
+   curl -fsSLO https://raw.githubusercontent.com/jackh0006/XRV-Installer/main/xrv-client.sh
+   bash xrv-client.sh --relay '$relay_url'
+   Supply the deployment ID. When asked for the tunnel key, read it on the VPS:
+   sudo cat $TUNNEL_KEY_FILE
+   Paste the key ONLY into the client. Keep local SOCKS at 127.0.0.1:1080.
+
+5. Start the client if it is not already running:
+   ~/xrv/start-xrv.sh
+   Configure your browser/app for SOCKS5 127.0.0.1 port 1080, with proxy DNS.
+   Test from that device:
+   curl --socks5-hostname 127.0.0.1:1080 https://api.ipify.org
+   Expect the VPS exit IP (or your configured upstream proxy's exit IP).
+   This verifies real forwarding; the Google ok:true page alone does not.
+
+6. After changing Code.gs, use Deploy > Manage deployments > Edit >
+   New version > Deploy. Saving the editor alone does not update /exec.
+   Keep the deployment ID when editing an existing deployment.
+
+Troubleshooting:
+   Google login/HTML instead of JSON: check anonymous access and /exec URL.
+   Relay error: check the exact public port, DNS, trusted certificate and firewall.
+   On the VPS: sudo bash xrv-install.sh --check
+   On the client: bash xrv-client.sh --check
+   Quota/concurrency errors: reduce traffic or parallel sessions and allow
+   quota recovery. Extra deployments on one account do not multiply its quota.
+   Do not disable certificate validation or add repeated POST retries:
+   replaying tunnel requests can duplicate operations.
+
+Privacy and stability:
+   The tunnel key stays on server/client; Google forwards encrypted payloads.
+   Google can still see the account, relay address, timing and traffic volume.
+   Encryption does not make the connection invisible or unidentifiable.
+   Keep HTTPS at the destination too; the VPS is the tunnel's exit.
+   Anonymous deployments can be invoked by others and consume your quota.
+   Keep deployment URLs private; they are not authentication secrets.
+   Google limits runtime, calls and concurrency; no unlimited speed or uptime
+   is guaranteed. Keep defaults first, measure, then change one setting at a time.
+   TLS verification is on; payloads and upstream error bodies are not logged
+   by this script. Google may still record execution metadata.
+
+Full guide and official requirements:
+   https://github.com/jackh0006/XRV-Installer/blob/main/docs/GOOGLE-SETUP.md
+   https://developers.google.com/apps-script/guides/web
+   https://developers.google.com/apps-script/guides/services/quotas
+
+Read this guide again: sudo cat ${STATE_DIR}/GOOGLE-SETUP.txt
+Or: sudo bash xrv-install.sh --google-guide
+GUIDE
 }
 
 # =====================================================================
@@ -2082,16 +2169,7 @@ show_server_summary() {
   printf '  Logs                      : journalctl -u %s  and  %s\n' "$SERVER_SERVICE" "$LOG_FILE"
   printf '  Upstream project          : %s\n' "$XRV_PROJECT"
   printf '\n%sNext steps%s\n' "$BOLD" "$RESET"
-  printf '  1. On your PC/phone, run the client installer:\n'
-  printf '       bash xrv-client.sh\n'
-  printf '  2. When it asks for the relay, enter:\n'
-  printf '       %s\n' "$relay_url"
-  printf '  3. When it asks for the tunnel key, run this on the VPS and paste it:\n'
-  printf '       sudo cat %s\n' "$TUNNEL_KEY_FILE"
-  printf '  4. In https://script.google.com, create a Web App from:\n'
-  printf '       sudo cat %s\n' "$CODE_GS_FILE"
-  printf '     Deploy as: Execute as Me / Who has access: Anyone.\n'
-  printf '  5. Copy the Deployment ID (starts with AKfycb) into the client installer.\n'
+  google_setup_guide "$relay_url"
   printf '\n%sImportant%s\n' "$BOLD" "$RESET"
   printf '  • Never share the tunnel key or client_config.json.\n'
   printf '  • If the key leaks: sudo xrv-install.sh --rotate-key, then update every client.\n'
@@ -2317,7 +2395,7 @@ for raw in sys.argv[1:]:
     rows.append({"status": status, "check": name, "detail": detail})
 fails = sum(1 for r in rows if r["status"] == "FAIL")
 print(json.dumps({
-    "version": "1.2.2",
+    "version": "1.2.3",
     "verdict": "OK" if fails == 0 else "FAIL",
     "failed": fails,
     "checks": rows
@@ -2507,13 +2585,14 @@ main_menu() {
 
 usage() {
   cat <<'HELP_EOF'
-XRV v1.2.2 — hardened GooseRelayVPN server installer
+XRV v1.2.3 — hardened GooseRelayVPN server installer
 
 USAGE
   sudo bash xrv-install.sh                 interactive menu
   sudo bash xrv-install.sh --check         full health check
   sudo bash xrv-install.sh --server        install/update non-interactively
   sudo bash xrv-install.sh --cert          certificate manager
+  sudo bash xrv-install.sh --google-guide  show Google and client setup instructions
   sudo bash xrv-install.sh --rotate-key    generate a new tunnel key
   sudo bash xrv-install.sh --uninstall     remove XRV from this server
 
@@ -2584,6 +2663,7 @@ main() {
       --check | --doctor) mode="doctor" ;;
       --server | --install) mode="server" ;;
       --cert | --certificates) mode="cert" ;;
+      --google-guide) mode="google-guide" ;;
       --update) mode="update" ;;
       --rotate-key | --rotate) mode="rotate" ;;
       --uninstall) mode="uninstall" ;;
@@ -2644,6 +2724,10 @@ main() {
   load_state
 
   case "$mode" in
+    google-guide)
+      [[ -n "$XRV_DOMAIN" ]] || die "No relay configured. Install the server first."
+      google_setup_guide
+      ;;
     doctor)
       if doctor_flow; then
         return 0

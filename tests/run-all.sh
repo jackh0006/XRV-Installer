@@ -44,6 +44,12 @@ else
 fi
 
 section "Unit and integration tests"
+if command -v node >/dev/null 2>&1; then
+  node tests/test-google-forwarder.cjs || failed=1
+else
+  printf '  FAIL node is required for Google forwarder tests\n' >&2
+  failed=1
+fi
 for test in tests/test-client-lib.sh tests/test-server-lib.sh tests/test-client-install.sh tests/test-release.sh; do
   printf '\n-- %s\n' "$test"
   if bash "$test"; then

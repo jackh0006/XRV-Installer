@@ -65,6 +65,10 @@ write_code_gs "https://vpn.example.com:8443/tunnel" "${TMP}/Code.gs" >/dev/null 
 assert_file "Code.gs written" "${TMP}/Code.gs"
 assert_true "relay URL was injected" grep -q "https://vpn.example.com:8443/tunnel" "${TMP}/Code.gs"
 assert_true "no placeholder remains" bash -c "! grep -q RELAY_URL_PLACEHOLDER '${TMP}/Code.gs'"
+guide="$(google_setup_guide https://vpn.example.com:10443/tunnel)"
+assert_true "guide preserves custom public port" test "${guide#*https://vpn.example.com:10443/tunnel}" != "$guide"
+assert_true "guide includes exact script cat command" test "${guide#*sudo cat $CODE_GS_FILE}" != "$guide"
+assert_false "guide never prints tunnel key" test "${guide#*$KEY}" != "$guide"
 
 printf '\n== HAProxy config\n'
 HAPROXY_BIN="${HAPROXY_BIN:-$(command -v haproxy || true)}"
