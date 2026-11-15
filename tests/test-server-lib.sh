@@ -30,6 +30,8 @@ assert_true "accepts an http IP relay URL" valid_relay_url http://203.0.113.10:8
 assert_false "rejects a relay URL without /tunnel" valid_relay_url https://vpn.example.com:8443/
 assert_true "accepts a SOCKS5 proxy" valid_socks_proxy socks5://127.0.0.1:40000
 assert_false "rejects an HTTP upstream proxy" valid_socks_proxy http://127.0.0.1:40000
+assert_true "accepts an explicit systemd service" valid_systemd_service_name hedioum.service
+assert_false "rejects unsafe systemd service text" valid_systemd_service_name 'hedioum.service;reboot'
 
 printf '\n== server config generation\n'
 KEY="$(printf 'c%.0s' {1..64})"
