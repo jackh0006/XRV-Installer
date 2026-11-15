@@ -4,6 +4,22 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] — 2026-11-15
+
+### Added
+
+- `--acme-stop-service UNIT.service` for an explicit, verified service that
+  may be paused only while Let's Encrypt needs TCP port 80. The installer
+  records matching renewal hooks and restores only services that were running.
+
+### Fixed
+
+- Existing certificates valid for at least 30 days are now reused without
+  asking Certbot's standalone listener to bind port 80. This prevents an
+  unnecessary interruption to unrelated tunnels, web services, or HAProxy.
+- Public-port conflicts are detected before package, firewall, configuration,
+  or service changes are made.
+
 ## [1.2.0] — 2026-11-15
 
 ### Added
@@ -150,6 +166,7 @@ Initial public release.
 - Pinned upstream v1.7.1 release.
 
 [1.1.1]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.0...v1.1.1
+[1.2.1]: https://github.com/jackh0006/XRV-Installer/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/jackh0006/XRV-Installer/compare/v1.1.1...v1.2.0
 [1.1.0]: https://github.com/jackh0006/XRV-Installer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jackh0006/XRV-Installer/releases/tag/v1.0.0

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# XRV v1.2.0 — hardened GooseRelayVPN server installer and manager.
+# XRV v1.2.1 — hardened GooseRelayVPN server installer and manager.
 #
 # Main server installer for Linux amd64/arm64 VPS.
 # Client installer (Ubuntu amd64 + Termux arm64) lives in xrv-client.sh.
@@ -22,7 +22,7 @@ umask 022
 # =====================================================================
 # VERSION & METADATA
 # =====================================================================
-XRV_VERSION="1.2.0"
+XRV_VERSION="1.2.1"
 XRV_APP="XRV"
 XRV_AUTHOR="jackh0006 <jackh109867@gmail.com>"
 XRV_PROJECT="https://github.com/Kianmhz/GooseRelayVPN"
@@ -286,6 +286,8 @@ valid_socks_proxy() {
   valid_port "$port"
 }
 
+valid_systemd_service_name() { [[ "$1" =~ ^[A-Za-z0-9@_.-]+\.service$ ]]; }
+
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
 require_root() {
@@ -427,6 +429,7 @@ CLI_MODE=""
 CLI_PUBLIC_PORT="${XRV_PUBLIC_PORT:-}"
 CLI_BACKEND_PORT="${XRV_BACKEND_PORT:-}"
 CLI_UPSTREAM_PROXY="${XRV_UPSTREAM_PROXY:-}"
+CLI_ACME_STOP_SERVICES="${XRV_ACME_STOP_SERVICES:-}"
 
 XRV_DOMAIN="${XRV_DOMAIN:-}"
 XRV_EMAIL="${XRV_EMAIL:-}"
@@ -448,6 +451,7 @@ load_state() {
   [[ -n "${CLI_PUBLIC_PORT:-}" ]] && XRV_PUBLIC_PORT="$CLI_PUBLIC_PORT"
   [[ -n "${CLI_BACKEND_PORT:-}" ]] && XRV_BACKEND_PORT="$CLI_BACKEND_PORT"
   [[ -n "${CLI_UPSTREAM_PROXY:-}" ]] && XRV_UPSTREAM_PROXY="$CLI_UPSTREAM_PROXY"
+  [[ -n "${CLI_ACME_STOP_SERVICES:-}" ]] && XRV_ACME_STOP_SERVICES="$CLI_ACME_STOP_SERVICES"
   if [[ -n "${CLI_DOMAIN:-}" && -z "${CLI_MODE:-}" ]] && valid_domain "$CLI_DOMAIN"; then
     XRV_MODE="tls"
   fi
@@ -1004,12 +1008,10 @@ check_public_port_free() {
     error "UDP port ${port} is already used; choose a port free for both TCP and UDP."
     return 1
   fi
-  if systemctl is-active --quiet "$HAPROXY_SERVICE" 2>/dev/null; then
-    return 0
-  fi
   local owners
   owners="$(port_owner_commands "$port")"
-  if [[ "$owners" == *"haproxy"* && "$owners" == *"xrv"* ]]; then
+  if [[ "$owners" == *"haproxy"* ]] && systemctl is-active --quiet "$HAPROXY_SERVICE" 2>/dev/null &&
+    grep -Eq "^[[:space:]]*bind[[:space:]].*:${port}([[:space:]]|$)" "$HAPROXY_CONFIG" 2>/dev/null; then
     return 0
   fi
   error "TCP port ${port} is already used by: ${owners:-an unknown process}"
@@ -1214,6 +1216,54 @@ port80_conflicts() {
   printf '%s' "$owners"
 }
 
+certificate_usable() {
+  # certbot's standalone mode binds port 80 even when it would merely keep an
+  # existing certificate. Reuse a healthy certificate without disruption.
+  local domain="$1" live="/etc/letsencrypt/live/${1}"
+  [[ -f "${live}/fullchain.pem" && -f "${live}/privkey.pem" ]] || return 1
+  openssl x509 -in "${live}/fullchain.pem" -noout -checkend 2592000 >/dev/null 2>&1 || return 1
+  openssl x509 -in "${live}/fullchain.pem" -noout -checkhost "$domain" >/dev/null 2>&1
+}
+
+validate_acme_stop_services() {
+  local svc
+  for svc in $XRV_ACME_STOP_SERVICES; do
+    valid_systemd_service_name "$svc" || die "Invalid ACME service name '$svc'. Use an exact unit such as hedioum.service."
+    systemctl cat "$svc" >/dev/null 2>&1 || die "ACME service '$svc' does not exist. Check: systemctl status $svc"
+  done
+}
+
+stop_acme_services() {
+  local svc
+  ACME_STOPPED=()
+  for svc in $XRV_ACME_STOP_SERVICES; do
+    if systemctl is-active --quiet "$svc"; then
+      info "Temporarily stopping $svc so Let's Encrypt can use TCP port 80"
+      if ! systemctl stop "$svc"; then
+        restart_acme_services "${ACME_STOPPED[@]}"
+        die "Could not stop $svc. No certificate request was made."
+      fi
+      ACME_STOPPED+=("$svc")
+    fi
+  done
+}
+
+restart_acme_services() {
+  local svc
+  for svc in "$@"; do
+    systemctl start "$svc" || warn "Could not restart $svc; run: systemctl start $svc"
+  done
+}
+
+configure_renewal_hooks() {
+  local domain="$1"
+  if [[ -n "$XRV_ACME_STOP_SERVICES" ]]; then
+    set_renewal_hooks "$domain" "systemctl stop $XRV_ACME_STOP_SERVICES" "systemctl start $XRV_ACME_STOP_SERVICES"
+  else
+    set_renewal_hooks "$domain" "" ""
+  fi
+}
+
 issue_certificate() {
   local domain="$1" email="$2" force="${3:-no}"
   require_root
@@ -1225,7 +1275,29 @@ issue_certificate() {
     fi
   }
 
+  if [[ "$force" != "yes" ]] && certificate_usable "$domain"; then
+    ok "A trusted certificate for $domain is already valid for at least 30 days; port 80 is untouched."
+    validate_acme_stop_services
+    install_certbot_hook
+    configure_renewal_hooks "$domain"
+    build_haproxy_pem "$domain"
+    if systemctl is-active --quiet "$HAPROXY_SERVICE" 2>/dev/null; then
+      reload_haproxy
+    fi
+    if systemctl list-unit-files certbot.timer >/dev/null 2>&1; then
+      run "Enabling automatic certificate renewal" systemctl enable --now certbot.timer
+    else
+      install_xrv_renew_timer
+    fi
+    return 0
+  fi
+
   local conflicts stopped=() svc rc=0
+  validate_acme_stop_services
+  if [[ -n "$XRV_ACME_STOP_SERVICES" ]]; then
+    stop_acme_services
+    stopped=("${ACME_STOPPED[@]}")
+  fi
   conflicts="$(port80_conflicts)"
   if [[ -n "$conflicts" ]]; then
     warn "TCP port 80 is currently used by: $conflicts"
@@ -1236,21 +1308,26 @@ issue_certificate() {
       case "$svc" in
         nginx | apache2 | httpd | haproxy | lighttpd | caddy)
           if confirm "Stop '$svc' for about 20 seconds while the certificate is issued?"; then
-            systemctl stop "$svc" || warn "Could not stop $svc; continuing anyway."
+            if ! systemctl stop "$svc"; then
+              restart_acme_services "${stopped[@]}"
+              die "Could not stop $svc. No certificate request was made."
+            fi
             stopped+=("$svc")
             stop_list="${stop_list}${stop_list:+ }$svc"
           else
+            restart_acme_services "${stopped[@]}"
             die "Certificate not requested. Free port 80 and re-run: sudo xrv-install.sh --cert"
           fi
           ;;
         *)
+          restart_acme_services "${stopped[@]}"
           die "Port 80 is used by '$svc'. Stop it manually, then re-run: sudo xrv-install.sh --cert"
           ;;
       esac
     done
-    XRV_ACME_STOP_SERVICES="$stop_list"
-  else
-    XRV_ACME_STOP_SERVICES=""
+    if [[ -n "$stop_list" ]]; then
+      XRV_ACME_STOP_SERVICES="${XRV_ACME_STOP_SERVICES:+${XRV_ACME_STOP_SERVICES} }${stop_list}"
+    fi
   fi
 
   install_certbot_hook
@@ -1278,11 +1355,7 @@ issue_certificate() {
   fi
 
   # Always put the machine back the way we found it.
-  if [[ ${#stopped[@]} -gt 0 ]]; then
-    for svc in "${stopped[@]}"; do
-      systemctl start "$svc" || warn "Could not restart $svc; start it manually."
-    done
-  fi
+  if [[ ${#stopped[@]} -gt 0 ]]; then restart_acme_services "${stopped[@]}"; fi
 
   if [[ $rc -ne 0 ]]; then
     printf '\n%sThe certificate request failed.%s\n' "$BOLD" "$RED" >&2
@@ -1300,11 +1373,7 @@ issue_certificate() {
     warn "Use it for testing only, then issue a real one without XRV_ACME_STAGING."
   fi
 
-  if [[ -n "$XRV_ACME_STOP_SERVICES" ]]; then
-    set_renewal_hooks "$domain" "systemctl stop $XRV_ACME_STOP_SERVICES" "systemctl start $XRV_ACME_STOP_SERVICES"
-  else
-    set_renewal_hooks "$domain" "" ""
-  fi
+  configure_renewal_hooks "$domain"
 
   build_haproxy_pem "$domain"
   if systemctl is-active --quiet "$HAPROXY_SERVICE" 2>/dev/null; then
@@ -1890,6 +1959,20 @@ install_server_flow() {
     ask_upstream_proxy
   fi
 
+  # Catch collisions before packages, UFW, files, or services are changed.
+  if [[ "$XRV_MODE" == "tls" ]]; then
+    step "Checking the selected ports"
+    check_public_port_free "$XRV_PUBLIC_PORT" || die "No changes were made. Pick a free --public-port and try again."
+    if ! port_is_free "$XRV_BACKEND_PORT"; then
+      local backend_owners
+      backend_owners="$(port_owner_commands "$XRV_BACKEND_PORT")"
+      if ! { [[ "$backend_owners" == *"xrv-server"* ]] && systemctl is-active --quiet "$SERVER_SERVICE" 2>/dev/null &&
+        grep -Eq "\"server_port\"[[:space:]]*:[[:space:]]*${XRV_BACKEND_PORT}" "$SERVER_CONFIG" 2>/dev/null; }; then
+        die "Private backend port ${XRV_BACKEND_PORT} is already used by: ${backend_owners:-an unknown process}. No changes were made."
+      fi
+    fi
+  fi
+
   step "Installing the operating system pieces"
   install_packages
   ensure_users_and_dirs
@@ -2234,7 +2317,7 @@ for raw in sys.argv[1:]:
     rows.append({"status": status, "check": name, "detail": detail})
 fails = sum(1 for r in rows if r["status"] == "FAIL")
 print(json.dumps({
-    "version": "1.2.0",
+    "version": "1.2.1",
     "verdict": "OK" if fails == 0 else "FAIL",
     "failed": fails,
     "checks": rows
@@ -2424,7 +2507,7 @@ main_menu() {
 
 usage() {
   cat <<'HELP_EOF'
-XRV v1.2.0 — hardened GooseRelayVPN server installer
+XRV v1.2.1 — hardened GooseRelayVPN server installer
 
 USAGE
   sudo bash xrv-install.sh                 interactive menu
@@ -2439,6 +2522,8 @@ NON-INTERACTIVE SERVER OPTIONS
   --email ADDRESS        Let's Encrypt contact address
   --public-port PORT     public TLS port (default 8443)
   --backend-port PORT    private relay port (default 9443; must differ)
+  --acme-stop-service U  exact .service unit to pause only when port 80 is
+                         needed for a new certificate (for example hedioum.service)
   --http                 HTTP-only mode (no domain/certificate; not recommended)
   --tls                  force TLS mode when a saved state says HTTP
   --upstream-proxy URL   optional socks5://127.0.0.1:40000 for outbound routing
@@ -2460,6 +2545,8 @@ SAFETY NOTES
   • The relay checksum is pinned. A mismatch stops the install.
   • The tunnel key is never printed in logs. It is stored 600, owned by xrv.
   • Re-running is safe: config and key are kept unless you ask for a new key.
+  • A valid certificate is reused without touching port 80. A named ACME
+    service is paused only for actual issuance and restored immediately.
   • Full log (no secrets): /var/log/xrv/install.log
 
 CLIENT
@@ -2527,6 +2614,11 @@ main() {
         shift || die "--backend-port needs a value"
         CLI_BACKEND_PORT="$1"
         XRV_BACKEND_PORT="$1"
+        ;;
+      --acme-stop-service)
+        shift || die "--acme-stop-service needs a systemd unit name"
+        CLI_ACME_STOP_SERVICES="$1"
+        XRV_ACME_STOP_SERVICES="$1"
         ;;
       --upstream-proxy)
         shift || die "--upstream-proxy needs a value"

@@ -55,7 +55,9 @@ the client installer never installed a client, the deployment manager had a
 Python syntax error, the systemd sandbox hid `/root`, and HAProxy was started
 with options that recent versions reject. v1.1.0 is a full audit fix. v1.2.0
 adds smart, conflict-aware port selection and independently configurable public
-and private relay ports.
+and private relay ports. v1.2.1 safely reuses a healthy certificate without
+touching port 80, and can pause one explicitly named systemd service only when
+fresh ACME validation is required.
 
 Highlights:
 
@@ -129,6 +131,10 @@ Useful flags:
 ```
 --public-port 8443      change the public TLS port
 --backend-port 9443     change the private, loopback-only relay port
+--acme-stop-service hedioum.service
+                        pause this exact service only when a new Let's Encrypt
+                        HTTP-01 validation needs TCP port 80; it is restored
+                        immediately and the same safe hooks are used at renewal
 --upstream-proxy socks5://127.0.0.1:40000
                         route VPS outbound traffic through a local SOCKS5
                         (for example Cloudflare WARP)
