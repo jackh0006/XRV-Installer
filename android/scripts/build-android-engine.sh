@@ -8,5 +8,5 @@ ndk="${ANDROID_NDK_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}/ndk/28.2.1367635
 clang="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/${triple}23-clang"
 [[ -x "$clang" ]] || { echo "Android NDK API 23 compiler not found: $clang" >&2; exit 1; }
 out="$root/generated/$ABI"; mkdir -p "$out/include"
-(cd "$root/engine" && CGO_ENABLED=1 GOOS=android GOARCH="$arch" CC="$clang" go build -trimpath -buildmode=c-shared -ldflags='-s -w' -o "$out/libxrvbridge.so" ./mobile)
+(cd "$root/engine" && go mod tidy && CGO_ENABLED=1 GOOS=android GOARCH="$arch" CC="$clang" go build -trimpath -buildmode=c-shared -ldflags='-s -w' -o "$out/libxrvbridge.so" ./mobile)
 mv "$out/libxrvbridge.h" "$out/include/libxrvbridge.h"
