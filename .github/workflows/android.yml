@@ -1,6 +1,18 @@
 name: Android
 
 on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub release tag to receive the verified APK
+        required: true
+        default: v1.2.4
+        type: string
+      publish_release:
+        description: Attach the verified APK and checksum to the selected release
+        required: true
+        default: false
+        type: boolean
   pull_request:
     paths: ["android/**", ".github/workflows/android.yml"]
   push:
@@ -8,7 +20,7 @@ on:
     paths: ["android/**", ".github/workflows/android.yml"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -46,6 +58,14 @@ jobs:
           name: XRV-arm64
           path: android/XRV-arm64.apk
           if-no-files-found: error
+      - name: Publish verified release assets
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          sha256sum XRV-arm64.apk > XRV-arm64.apk.sha256
+          gh release upload "$RELEASE_TAG" XRV-arm64.apk XRV-arm64.apk.sha256 --clobber
       - uses: github/codeql-action/upload-sarif@v3
         if: always() && hashFiles('android/app/build/reports/lint-results-debug.sarif') != ''
         with:
