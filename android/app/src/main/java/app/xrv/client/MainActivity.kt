@@ -2,6 +2,7 @@ package app.xrv.client
 
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.content.res.Configuration
 import android.text.InputType
@@ -24,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         val scroll = ScrollView(this); val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 56, 48, 48); setBackgroundColor(bg) }
         fun label(text: String) = TextView(this).apply { this.text = text; setTextColor(primary); textSize = 14f; setPadding(0, 22, 0, 8) }
         fun field(hint: String, secret: Boolean = false) = EditText(this).apply { this.hint = hint; setHintTextColor(muted); setTextColor(primary); setSingleLine(); inputType = if (secret) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD else InputType.TYPE_CLASS_TEXT; setBackgroundColor(surface); setPadding(24,18,24,18) }
-        body.addView(TextView(this).apply { text = "XRV"; textSize = 34f; setTextColor(Color.rgb(28,150,110)); setTypeface(null, 1) })
+        body.addView(TextView(this).apply { text = "XRV"; textSize = 34f; setTextColor(Color.rgb(28,150,110)); setTypeface(Typeface.DEFAULT, Typeface.BOLD) })
         body.addView(TextView(this).apply { text = "Private SOCKS5 tunnel"; textSize = 16f; setTextColor(muted); setPadding(0, 4, 0, 14) })
         body.addView(label("DEPLOYMENT IDS · UP TO 4"))
         repeat(4) { n -> field("Deployment ID ${n + 1} (optional after the first)").also { ids += it; body.addView(it, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 12 }) } }
