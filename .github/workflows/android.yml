@@ -34,8 +34,6 @@ jobs:
         with:
           go-version: '1.25.0'
           cache-dependency-path: android/engine/go.sum
-      - name: Install NDK
-        run: sdkmanager "ndk;28.2.13676358"
       - name: Verify source has no embedded credentials
         run: |
           ! rg -n '(AKfycb[A-Za-z0-9_-]{8,}|[0-9a-fA-F]{64})' app/src scripts || (echo 'Credential-like value found in app source' && exit 1)
