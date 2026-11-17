@@ -1,0 +1,49 @@
+name: Android
+
+on:
+  pull_request:
+    paths: ["android/**", ".github/workflows/android.yml"]
+  push:
+    branches: [main]
+    paths: ["android/**", ".github/workflows/android.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Build, test and lint arm64 APK
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.2'
+          cache-dependency-path: android/engine/go.sum
+      - name: Install NDK
+        run: sdkmanager "ndk;28.2.13676358"
+      - name: Verify source has no embedded credentials
+        run: |
+          ! rg -n '(AKfycb[A-Za-z0-9_-]{8,}|[0-9a-fA-F]{64})' app/src scripts || (echo 'Credential-like value found in app source' && exit 1)
+      - name: Build, test and lint
+        run: ./gradlew test lint assembleDebug --no-daemon --stacktrace
+      - name: Name artifact
+        run: cp app/build/outputs/apk/debug/app-debug.apk XRV-arm64.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XRV-arm64
+          path: android/XRV-arm64.apk
+          if-no-files-found: error
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('android/app/build/reports/lint-results-debug.sarif') != ''
+        with:
+          sarif_file: android/app/build/reports/lint-results-debug.sarif

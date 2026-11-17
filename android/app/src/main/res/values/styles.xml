@@ -1,0 +1,1 @@
+<resources><style name="Theme.XRV" parent="Theme.AppCompat.DayNight.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:colorAccent">@color/xrv_accent</item><item name="android:navigationBarColor">@color/xrv_bg</item><item name="android:windowLightStatusBar">false</item><item name="android:statusBarColor">@color/xrv_bg</item></style></resources>
