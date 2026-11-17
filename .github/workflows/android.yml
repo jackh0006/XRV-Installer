@@ -1,0 +1,72 @@
+name: Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub release tag to receive the verified APK
+        required: true
+        default: v1.2.4
+        type: string
+      publish_release:
+        description: Attach the verified APK and checksum to the selected release
+        required: true
+        default: false
+        type: boolean
+  pull_request:
+    paths: ["android/**", ".github/workflows/android.yml"]
+  push:
+    branches: [main]
+    paths: ["android/**", ".github/workflows/android.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Build, test and lint arm64 APK
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Install Android build tools
+        run: |
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+          cache-dependency-path: android/engine/go.sum
+      - name: Verify source has no embedded credentials
+        run: |
+          ! rg -n '(AKfycb[A-Za-z0-9_-]{8,}|[0-9a-fA-F]{64})' app/src scripts || (echo 'Credential-like value found in app source' && exit 1)
+      - name: Build, test and lint
+        run: ./gradlew test lint assembleDebug --no-daemon --stacktrace
+      - name: Name artifact
+        run: cp app/build/outputs/apk/debug/app-debug.apk XRV-arm64.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XRV-arm64
+          path: android/XRV-arm64.apk
+          if-no-files-found: error
+      - name: Publish verified release assets
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          sha256sum XRV-arm64.apk > XRV-arm64.apk.sha256
+          gh release upload "$RELEASE_TAG" XRV-arm64.apk XRV-arm64.apk.sha256 --clobber
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('android/app/build/reports/lint-results-debug.sarif') != ''
+        with:
+          sarif_file: android/app/build/reports/lint-results-debug.sarif

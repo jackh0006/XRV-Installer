@@ -19,3 +19,11 @@ docs/CHANGELOG.md
 .DS_Store
 *.swp
 *~
+android/.gradle/
+android/app/build/
+android/app/.cxx/
+android/build/
+android/generated/
+android/XRV-arm64.apk
+android/XRV-arm64.apk.sha256
+android/local.properties
