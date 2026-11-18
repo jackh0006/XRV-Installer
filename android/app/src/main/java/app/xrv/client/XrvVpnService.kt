@@ -2,6 +2,7 @@ package app.xrv.client
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Handler
 import android.os.Looper
@@ -59,19 +60,21 @@ class XrvVpnService : VpnService() {
     private val watchdog = object : Runnable {
         override fun run() {
             if (!isRunning || shuttingDown) return
-            val stats = runCatching { TProxyService.TProxyGetStats() }.getOrNull()
-            if (stats == null || stats.size < 4 || !TProxyService.TProxyIsRunning()) {
+            if (!TProxyService.TProxyIsRunning()) {
                 fail(getString(R.string.error_tunnel_stopped))
                 return
             }
-            val tx = stats[1]
-            val rx = stats[3]
-            val current = XrvState.read(this@XrvVpnService)
-            XrvState.write(
-                this@XrvVpnService,
-                current.copy(txBytes = tx, rxBytes = rx)
+            val stats = NetResults.traffic(
+                runCatching { NativeBridge.stats() }.getOrNull()
             )
-            updateNotification(tx, rx)
+            val current = XrvState.read(this@XrvVpnService)
+            if (stats != null) {
+                XrvState.write(
+                    this@XrvVpnService,
+                    current.copy(txBytes = stats.up, rxBytes = stats.down)
+                )
+            }
+            updateNotification(stats)
             handler.postDelayed(this, 2_000)
         }
     }
@@ -108,7 +111,12 @@ class XrvVpnService : VpnService() {
         worker = thread(name = "xrv-vpn", isDaemon = true) {
             try {
                 if (shuttingDown) return@thread
-                val port = Engine.start(profile, OWNER).getOrThrow()
+                val options = EngineOptions(
+                    googleIp = XrvSettings.selectedGoogleIp(this),
+                    coalesceMs = XrvSettings.coalesceMs(this),
+                    idleSlots = XrvSettings.idleSlots(this, profile.deployments.size)
+                )
+                val port = Engine.start(profile, OWNER, options).getOrThrow()
                 if (shuttingDown) {
                     Engine.stop(OWNER)
                     return@thread
@@ -135,7 +143,11 @@ class XrvVpnService : VpnService() {
                 }
                 isRunning = true
                 XrvState.running(this, Mode.TUN, port)
-                updateNotification(0, 0)
+                XrvLog.add(
+                    "vpn",
+                    "established port=$port edge=${XrvSettings.selectedGoogleIp(this).ifEmpty { "default" }} per-app=${XrvSettings.perAppMode(this).name}/${XrvSettings.perAppPackages(this).size}"
+                )
+                updateNotification(null)
                 handler.postDelayed(watchdog, 2_000)
             } catch (t: Throwable) {
                 fail(t.message ?: getString(R.string.error_start_failed))
@@ -181,12 +193,42 @@ class XrvVpnService : VpnService() {
             .addAddress(TUN_IPV6, 128)
             .addRoute("::", 0)
 
-        // Never route XRV's own relay traffic back into its own tunnel.
-        runCatching { builder.addDisallowedApplication(packageName) }
+        // Keep XRV's own relay traffic out of its tunnel (except in include
+        // mode, where the allow-list already excludes it).
+        applyPerAppRules(builder)
 
         return builder.establish() ?: throw IllegalStateException(
             getString(R.string.error_vpn_denied)
         )
+    }
+
+    private fun applyPerAppRules(builder: Builder) {
+        val mode = XrvSettings.perAppMode(this)
+        if (mode != PerAppMode.INCLUDE) {
+            builder.addDisallowedApplication(packageName)
+        }
+        if (mode == PerAppMode.ALL) return
+        val selected = XrvSettings.perAppPackages(this)
+        if (mode == PerAppMode.INCLUDE && selected.isEmpty()) {
+            throw IllegalStateException(getString(R.string.error_no_per_app))
+        }
+        var added = 0
+        for (pkg in selected) {
+            if (pkg == packageName) continue
+            try {
+                if (mode == PerAppMode.INCLUDE) {
+                    builder.addAllowedApplication(pkg)
+                } else {
+                    builder.addDisallowedApplication(pkg)
+                }
+                added++
+            } catch (_: PackageManager.NameNotFoundException) {
+                // The app was uninstalled after it was selected.
+            }
+        }
+        if (mode == PerAppMode.INCLUDE && added == 0) {
+            throw IllegalStateException(getString(R.string.error_no_per_app))
+        }
     }
 
     private fun writeHevConfig(port: Int, profile: Profile): File {
@@ -225,11 +267,11 @@ class XrvVpnService : VpnService() {
         return file
     }
 
-    private fun updateNotification(tx: Long, rx: Long) {
-        val text = if (tx == 0L && rx == 0L) {
-            getString(R.string.notification_vpn_text)
+    private fun updateNotification(stats: Traffic?) {
+        val text = if (stats != null && (stats.up > 0 || stats.down > 0)) {
+            getString(R.string.notification_vpn_stats, Format.bytes(stats.up), Format.bytes(stats.down))
         } else {
-            getString(R.string.notification_vpn_stats, Format.bytes(tx), Format.bytes(rx))
+            getString(R.string.notification_vpn_text)
         }
         val notification = XrvNotifications.build(
             this,
@@ -245,6 +287,7 @@ class XrvVpnService : VpnService() {
     }
 
     private fun fail(message: String) {
+        XrvLog.add("vpn", "failed: $message")
         isRunning = false
         XrvState.failed(this, Mode.TUN, message)
         shutdown(writeStopped = false)
@@ -254,6 +297,7 @@ class XrvVpnService : VpnService() {
     private fun shutdown(writeStopped: Boolean) {
         if (shuttingDown) return
         shuttingDown = true
+        XrvLog.add("vpn", "shutting down")
         handler.removeCallbacksAndMessages(null)
         isRunning = false
         if (hevStarted) {

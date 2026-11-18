@@ -37,6 +37,28 @@
   builds `assembleRelease`, runs tests/lint, verifies the APK, and the tests no
   longer contain literal credential-shaped strings.
 
+## Settings and diagnostics update (2026-11-18)
+
+- **Per-app proxy** for TUN mode: all apps, only selected apps, or all except
+  selected apps, with a searchable installed-app picker.
+- **Google edge testing and custom IPs**: probes the same four Google entry
+  points as `xrv-client.sh` with a real HTTPS `generate_204` request, shows
+  latency, and stores the fastest edge. Add or remove IPv4 candidates.
+- **Real traffic counters**: the status card and notification now count actual
+  SOCKS payload bytes from the engine, not raw TUN/hev packet bookkeeping.
+- **Live tunnel test**: fetches `https://api.ipify.org` through the
+  authenticated SOCKS listener, shows the exit IP/latency, and compares it
+  with the phone's direct IP.
+- **In-app logs**: app events and native carrier logs with keys, deployment
+  IDs and proxy credentials redacted; app events persist privately; crashes
+  are recorded with a stack trace.
+- **Performance settings**: uplink batching (default 25 ms, matching the Linux
+  client) and 1–3 idle polls, scaling from 1 to 3 with deployment count.
+- **XRV profile name**: copied proxy links end in `#XRV`, so v2rayNG imports
+  the profile as **XRV**, not `none`.
+- `QUERY_ALL_PACKAGES` is used only for the local per-app picker; nothing is
+  uploaded.
+
 ## Modes
 
 - **TUN · system-wide** — Android VPN, all app traffic, mapped DNS.
@@ -63,6 +85,6 @@ the tunnel's mapped DNS server. This is a protocol limit and is documented in
 
 ```bash
 sha256sum XRV-arm64.apk
-# 46398d1f07168c84ad4fe721286ac23c0037427d646c57769c583a013bbf0636  XRV-arm64.apk
+# see XRV-arm64.apk.sha256 for the published asset hash
 bash android/scripts/verify-apk.sh XRV-arm64.apk
 ```

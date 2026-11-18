@@ -21,4 +21,9 @@ object NativeBridge {
 
     external fun start(configJson: String): String
     external fun stop()
+    external fun stats(): String
+    external fun probeEdges(json: String): String
+    external fun testConnection(json: String): String
+    external fun logs(): String
+    external fun clearLogs()
 }

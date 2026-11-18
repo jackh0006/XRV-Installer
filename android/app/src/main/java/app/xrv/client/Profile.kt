@@ -2,7 +2,6 @@ package app.xrv.client
 
 import org.json.JSONArray
 import org.json.JSONObject
-import java.security.SecureRandom
 
 /**
  * Non-secret connection settings are kept in [XrvSettings]; this object only
@@ -27,8 +26,8 @@ data class Profile(
     fun ensureCredentials(): Profile {
         if (socksUser.isNotEmpty() && socksPass.isNotEmpty()) return this
         return copy(
-            socksUser = "xrv" + randomToken(6),
-            socksPass = randomToken(16)
+            socksUser = "xrv" + Token.hex(6),
+            socksPass = Token.hex(16)
         )
     }
 
@@ -80,18 +79,7 @@ data class Profile(
             )
         }
 
-        private fun randomToken(bytes: Int): String {
-            val data = ByteArray(bytes)
-            SecureRandom().nextBytes(data)
-            val digits = "0123456789abcdef"
-            val out = CharArray(data.size * 2)
-            for (i in data.indices) {
-                val value = data[i].toInt() and 0xff
-                out[i * 2] = digits[value ushr 4]
-                out[i * 2 + 1] = digits[value and 0x0f]
-            }
-            return String(out)
-        }
+
 
         /** Returns a user-facing error, or null when the profile is valid. */
         fun validate(ids: List<String>, key: String, port: Int): String? {

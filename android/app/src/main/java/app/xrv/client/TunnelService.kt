@@ -3,7 +3,9 @@ package app.xrv.client
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import kotlin.concurrent.thread
 
@@ -38,6 +40,28 @@ class TunnelService : Service() {
     }
 
     private var worker: Thread? = null
+    private val statsHandler = Handler(Looper.getMainLooper())
+    private var activePort = 0
+
+    private val statsTick = object : Runnable {
+        override fun run() {
+            if (!isRunning) return
+            val stats = NetResults.traffic(
+                runCatching { NativeBridge.stats() }.getOrNull()
+            )
+            if (stats != null) {
+                val current = XrvState.read(this@TunnelService)
+                XrvState.write(
+                    this@TunnelService,
+                    current.copy(txBytes = stats.up, rxBytes = stats.down)
+                )
+                updateNotification(activePort, stats)
+            } else {
+                updateNotification(activePort, null)
+            }
+            statsHandler.postDelayed(this, 2_000)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -64,14 +88,23 @@ class TunnelService : Service() {
 
         worker = thread(name = "xrv-proxy", isDaemon = true) {
             if (!isRunning) return@thread
-            Engine.start(profile, OWNER)
+            val options = EngineOptions(
+                googleIp = XrvSettings.selectedGoogleIp(this),
+                coalesceMs = XrvSettings.coalesceMs(this),
+                idleSlots = XrvSettings.idleSlots(this, profile.deployments.size)
+            )
+            Engine.start(profile, OWNER, options)
                 .onSuccess { port ->
                     if (!isRunning) {
                         Engine.stop(OWNER)
                         return@onSuccess
                     }
-                    updateNotification(port)
+                    activePort = port
+                    updateNotification(port, null)
                     XrvState.running(this, Mode.PROXY, port)
+                    XrvLog.add("proxy", "listening on 127.0.0.1:$port")
+                    statsHandler.removeCallbacks(statsTick)
+                    statsHandler.postDelayed(statsTick, 1_000)
                 }
                 .onFailure { fail(it.message ?: getString(R.string.error_start_failed)) }
         }
@@ -98,11 +131,21 @@ class TunnelService : Service() {
         }
     }
 
-    private fun updateNotification(port: Int) {
+    private fun updateNotification(port: Int, stats: Traffic?) {
+        val text = if (stats != null && (stats.up > 0 || stats.down > 0)) {
+            getString(
+                R.string.notification_proxy_stats,
+                getString(R.string.notification_proxy_text, port),
+                Format.bytes(stats.up),
+                Format.bytes(stats.down)
+            )
+        } else {
+            getString(R.string.notification_proxy_text, port)
+        }
         val notification = XrvNotifications.build(
             this,
             getString(R.string.notification_proxy_title),
-            getString(R.string.notification_proxy_text, port),
+            text,
             TunnelService::class.java,
             ACTION_STOP
         )
@@ -113,7 +156,9 @@ class TunnelService : Service() {
     }
 
     private fun fail(message: String) {
+        XrvLog.add("proxy", "failed: $message")
         isRunning = false
+        statsHandler.removeCallbacks(statsTick)
         Engine.stop(OWNER)
         XrvState.failed(this, Mode.PROXY, message)
         Foreground.stop(this)
@@ -121,8 +166,10 @@ class TunnelService : Service() {
     }
 
     private fun shutdown() {
+        XrvLog.add("proxy", "shutdown requested")
         val wasRunning = isRunning || worker != null
         isRunning = false
+        statsHandler.removeCallbacks(statsTick)
         worker = null
         Engine.stop(OWNER)
         if (wasRunning || XrvState.read(this).mode == Mode.PROXY) {
@@ -134,6 +181,7 @@ class TunnelService : Service() {
 
     override fun onDestroy() {
         isRunning = false
+        statsHandler.removeCallbacks(statsTick)
         Engine.stop(OWNER)
         val current = XrvState.read(this)
         if (current.mode == Mode.PROXY && current.phase != Phase.ERROR) {

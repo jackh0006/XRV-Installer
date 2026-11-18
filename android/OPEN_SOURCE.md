@@ -6,10 +6,45 @@ encrypted relay client with two connection modes.
 | Mode | What it does | Best for |
 | --- | --- | --- |
 | **TUN · system-wide** | Creates an Android `VpnService` interface and forwards every app's TCP traffic through the encrypted relay. DNS is handled by the exit (no local DNS leak). | Normal phone use. One tap protects everything. |
-| **Proxy only** | Runs a SOCKS5 listener on `127.0.0.1` and creates no VPN interface. | Apps that accept a proxy, such as v2rayNG, or when another VPN must stay connected. |
+| **Proxy only** | Runs an authenticated SOCKS5 listener on `127.0.0.1` and creates no VPN interface. | Apps that accept a proxy, such as v2rayNG, or when another VPN must stay connected. |
 
 The app has no analytics, ads, telemetry or remote configuration. The only
 network endpoint is the Apps Script deployment ID entered by the owner.
+
+## Settings and diagnostics
+
+The gear button opens a settings screen that matches the Linux client's useful
+options:
+
+- **Per-app proxy (TUN only)** — all apps, only selected apps, or all except
+  selected apps. The picker lists installed apps and the VPN is rebuilt with
+  Android's allow/deny lists on the next connection. XRV always excludes
+  itself so its relay traffic cannot loop through its own tunnel.
+- **Google edge** — the same four Google entry points as `xrv-client.sh`
+  (`216.239.32.120`, `216.239.34.120`, `216.239.36.120`, `216.239.38.120`).
+  **Find fastest** performs a real HTTPS `generate_204` request to each
+  candidate, shows latency, and stores the fastest. Add or remove IPv4
+  candidates in the text field. **Use automatic edge** restores the default.
+- **Performance** — uplink batching (default 25 ms) and 1–3 concurrent idle
+  polls. The idle default scales from 1 to 3 with the number of deployments.
+- **Test tunnel** — opens a real request to `https://api.ipify.org` through
+  the authenticated local SOCKS5 listener, shows the exit IP and latency, and
+  compares it with the phone's direct IP. This is the same live check as
+  `xrv-client.sh --check`.
+- **Logs** — an in-app viewer for app events and native carrier output. Keys,
+  deployment IDs and proxy credentials are redacted, app events persist to
+  private storage, and the crash handler records the final stack trace.
+- **Battery settings** — opens Android's optimisation screen for Huawei/EMUI
+  reliability.
+
+The traffic counters in the status card are real SOCKS payload bytes counted
+inside the engine, not raw TUN/hev packet bookkeeping. They stay at zero until
+an app actually sends traffic.
+
+When the proxy address is copied, the share link ends in `#XRV`, so v2rayNG
+imports the profile with the name **XRV** instead of `none`. The link includes
+the generated SOCKS username/password and is cleared from the clipboard after
+60 seconds.
 
 ## Security properties
 
@@ -28,6 +63,10 @@ network endpoint is the Apps Script deployment ID entered by the owner.
 - The loopback SOCKS5 listener requires a randomly generated RFC 1929
   username/password. The Copy action includes them; TUN mode passes them to
   hev internally.
+- `QUERY_ALL_PACKAGES` is used only to populate the local per-app picker. The
+  package list never leaves the device.
+- The app logs are stored in private app storage with credential/key redaction
+  and a bounded size.
 - No `QUERY_ALL_PACKAGES`, no accessibility service, no device-admin access.
 
 ## Requirements
@@ -114,9 +153,10 @@ the foreground service.
 1. Select **Proxy only** and connect.
 2. The status card shows `socks5://127.0.0.1:PORT` and the share card shows the
    generated username/password. The Copy action includes them in the URL.
-3. In v2rayNG or another proxy client, add a **SOCKS5** server with host
-   `127.0.0.1`, the displayed port, and those credentials. Use the SOCKS5
-   hostname form so DNS is resolved by the exit.
+3. In v2rayNG or another proxy client, paste the copied link (it is named
+   XRV) or add a **SOCKS5** server with host `127.0.0.1`, the displayed port,
+   and those credentials. Use the SOCKS5 hostname form so DNS is resolved by
+   the exit.
 
 Do not route another VPN app's outbound through this local proxy while that
 same VPN is active: the engine's own HTTPS traffic would then go back through

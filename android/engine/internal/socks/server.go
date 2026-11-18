@@ -34,20 +34,29 @@ type SessionFactory func(target string) *session.Session
 // signaling (the underlying go-socks5 library doesn't take a ctx, so this
 // just wires it through for parity with the rest of the codebase).
 func Serve(ctx context.Context, listenAddr, user, pass string, debugTiming bool, factory SessionFactory) error {
-    ln, err := net.Listen(listenNetwork(listenAddr), listenAddr)
-    if err != nil { return err }
-    return ServeListener(ctx, ln, user, pass, debugTiming, factory)
+	ln, err := net.Listen(listenNetwork(listenAddr), listenAddr)
+	if err != nil {
+		return err
+	}
+	return ServeListener(ctx, ln, user, pass, debugTiming, factory)
 }
 
 // ServeListener accepts an already-bound socket so callers can report readiness.
 func ServeListener(ctx context.Context, ln net.Listener, user, pass string, debugTiming bool, factory SessionFactory) error {
-    defer ln.Close()
-    done := make(chan struct{})
-    defer close(done)
-    go func() { select { case <-ctx.Done(): ln.Close(); case <-done: } }()
+	defer ln.Close()
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		select {
+		case <-ctx.Done():
+			ln.Close()
+		case <-done:
+		}
+	}()
 	opts := []socks5.Option{
 		socks5.WithDial(func(_ context.Context, _, addr string) (net.Conn, error) {
 			s := factory(addr)
+			RecordSession()
 			if debugTiming {
 				log.Printf("[socks] new session %x for %s", s.ID[:4], addr)
 			}
