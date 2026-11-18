@@ -4,6 +4,26 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-settings] — 2026-11-18
+
+### Added
+
+- Per-app proxy for TUN mode (only selected / all except selected) with an
+  installed-app picker and Android allow/deny lists.
+- Google edge testing matching `xrv-client.sh`: real HTTPS `generate_204`
+  probes of the four standard edges, latency display, fastest-edge selection,
+  custom IPv4 candidates and automatic reset.
+- Real SOCKS payload traffic counters in both modes, replacing the hev raw
+  packet counters, plus session count from the engine.
+- Live tunnel test via `api.ipify.org` through the authenticated SOCKS proxy,
+  with exit-IP versus direct-IP comparison.
+- In-app log viewer with persisted app events, native carrier logs, crash
+  capture and secret redaction.
+- Performance settings for uplink coalescing (default 25 ms) and 1–3 idle
+  polls, scaling with deployment count.
+- Copied proxy links are named `#XRV` so v2rayNG imports them as XRV, not
+  `none`.
+
 ## [2.0.0] — 2026-11-17
 
 ### Added

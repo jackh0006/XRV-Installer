@@ -176,6 +176,7 @@ class MainActivity : AppCompatActivity() {
     private fun restoreProfile() {
         val profile = store.load() ?: run {
             profileCache = null
+            binding.portInput.setText(getString(R.string.port_value, XrvSettings.port(this)))
             return
         }
         profileCache = profile
@@ -195,6 +196,9 @@ class MainActivity : AppCompatActivity() {
     private fun setupActions() {
         binding.aboutButton.setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
+        }
+        binding.settingsButton.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
         binding.advancedHeader.setOnClickListener {
             setAdvanced(!advancedOpen)
@@ -232,7 +236,9 @@ class MainActivity : AppCompatActivity() {
         ).ensureCredentials()
         profileCache = profile
         store.save(profile)
+        XrvSettings.setPort(this, profile.socksPort)
         updateAdvancedSummary()
+        XrvLog.add("ui", "connect requested mode=${selectedMode().name}")
         requestNotificationPermission()
         when (selectedMode()) {
             Mode.PROXY -> startProxy()
@@ -384,6 +390,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun disconnect() {
+        XrvLog.add("ui", "disconnect requested")
         TunnelService.stop(this)
         XrvVpnService.stop(this)
         // Also cover a dead service that cannot receive the stop action.
@@ -397,6 +404,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun render() {
         val snapshot = XrvState.read(this)
+        if (!snapshot.active) {
+            val desired = if (XrvSettings.mode(this) == Mode.PROXY) R.id.btnProxy else R.id.btnTun
+            if (binding.modeGroup.checkedButtonId != desired) {
+                binding.modeGroup.check(desired)
+            }
+        }
         val mode = snapshot.mode ?: selectedMode()
         val phase = snapshot.phase
         val running = phase == Phase.RUNNING
@@ -436,7 +449,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val showStats = running && mode == Mode.TUN
+        val showStats = running
         binding.statsRow.visibility = if (showStats) View.VISIBLE else View.GONE
         if (showStats) {
             binding.txText.text = Format.bytes(snapshot.txBytes)
@@ -569,9 +582,9 @@ class MainActivity : AppCompatActivity() {
         val profile = profileCache
         val port = if (snapshot.port > 0) snapshot.port else (profile?.socksPort ?: Profile.DEFAULT_PORT)
         val address = if (profile != null && profile.socksUser.isNotEmpty() && profile.socksPass.isNotEmpty()) {
-            getString(R.string.proxy_address_auth, profile.socksUser, profile.socksPass, port)
+            getString(R.string.proxy_share_link, profile.socksUser, profile.socksPass, port)
         } else {
-            getString(R.string.proxy_address, port)
+            getString(R.string.proxy_share_link_no_auth, port)
         }
         val clipboard = getSystemService(ClipboardManager::class.java) ?: return
         clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), address))
@@ -606,6 +619,10 @@ class MainActivity : AppCompatActivity() {
             appendLine("Configuration: ${if (profile != null) "saved" else "missing"}")
             appendLine("Native library: ${NativeBridge.loadError ?: "loaded"}")
             appendLine("TUN engine: ${if (XrvVpnService.isRunning) "running" else "stopped"}")
+            val edge = XrvSettings.selectedGoogleIp(this@MainActivity).ifEmpty { XrvSettings.defaultGoogleIp }
+            appendLine("Google edge: $edge")
+            val perApp = XrvSettings.perAppMode(this@MainActivity)
+            appendLine("Per-app: ${perApp.name} (${XrvSettings.perAppPackages(this@MainActivity).size})")
             snapshot.message?.let { appendLine(); appendLine(it) }
         }
         MaterialAlertDialogBuilder(this)
@@ -624,7 +641,7 @@ class MainActivity : AppCompatActivity() {
                 profileCache = null
                 deploymentInputs.forEach { it.setText("") }
                 binding.keyInput.setText("")
-                binding.portInput.setText(getString(R.string.port_value, Profile.DEFAULT_PORT))
+                binding.portInput.setText(getString(R.string.port_value, XrvSettings.port(this)))
                 clearErrors()
                 updateAdvancedSummary()
                 toast(getString(R.string.cleared))
@@ -645,6 +662,27 @@ class MainActivity : AppCompatActivity() {
             if (runCatching { startActivity(intent) }.isSuccess) return
         }
         toast(getString(R.string.battery_button))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshFromSettings()
+    }
+
+    private fun refreshFromSettings() {
+        val state = XrvState.read(this)
+        if (!state.active) {
+            val mode = XrvSettings.mode(this)
+            val id = if (mode == Mode.PROXY) R.id.btnProxy else R.id.btnTun
+            if (binding.modeGroup.checkedButtonId != id) binding.modeGroup.check(id)
+        }
+        val stored = store.load()
+        if (stored != null && stored != profileCache) {
+            profileCache = stored
+            binding.portInput.setText(getString(R.string.port_value, stored.socksPort))
+            updateAdvancedSummary()
+        }
+        render()
     }
 
     override fun onStart() {

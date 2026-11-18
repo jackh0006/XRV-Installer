@@ -21,3 +21,22 @@ func TestValidCredential(t *testing.T) {
 		}
 	}
 }
+
+func TestUniqueIPv4(t *testing.T) {
+	got := uniqueIPv4([]string{
+		"216.239.32.120",
+		" 216.239.38.120 ",
+		"216.239.32.120",
+		"not-an-ip",
+		"999.1.1.1",
+	})
+	want := []string{"216.239.32.120", "216.239.38.120"}
+	if len(got) != len(want) {
+		t.Fatalf("uniqueIPv4 length = %d, want %d (%v)", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("uniqueIPv4[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}

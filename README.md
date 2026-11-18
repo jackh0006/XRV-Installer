@@ -273,7 +273,14 @@ XRV also ships as a native Android app for **arm64-v8a, Android 6.0+**.
      another VPN is already connected.
    - **Proxy only** — exposes `socks5://127.0.0.1:PORT` for v2rayNG or any
      app that accepts a SOCKS5 upstream, without creating a VPN interface.
-5. On Huawei/EMUI phones, tap **Battery settings** in the app and exclude XRV
+5. Open the gear icon for **Settings**:
+   - **Per-app proxy** — only selected apps, or all apps except selected.
+   - **Google edge** — test the four Google entry points and keep the fastest,
+     or add custom IPv4 addresses.
+   - **Test tunnel** — verifies the real exit IP through `api.ipify.org` and
+     compares it with the phone's direct IP.
+   - **Logs** — app events and native relay logs with secrets redacted.
+6. On Huawei/EMUI phones, tap **Battery settings** in the app and exclude XRV
    from battery optimisation.
 
 Full Android build, security and verification details:

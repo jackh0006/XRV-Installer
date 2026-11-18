@@ -32,6 +32,7 @@ func (v *VirtualConn) Read(b []byte) (int, error) {
 			n := copy(b, v.readBuf)
 			v.readBuf = v.readBuf[n:]
 			v.mu.Unlock()
+			RecordDown(n)
 			return n, nil
 		}
 		deadline := v.readDeadline
@@ -60,6 +61,7 @@ func (v *VirtualConn) Read(b []byte) (int, error) {
 				v.readBuf = data[n:]
 			}
 			v.mu.Unlock()
+			RecordDown(n)
 			return n, nil
 		case <-timerCh:
 			return 0, context.DeadlineExceeded
@@ -72,6 +74,7 @@ func (v *VirtualConn) Write(b []byte) (int, error) {
 		// connect_data optimization: if this is the first write for a new
 		// session and the SYN hasn't been sent yet, bundle it.
 		v.s.EnqueueInitialData(b)
+		RecordUp(len(b))
 	}
 	return len(b), nil
 }
