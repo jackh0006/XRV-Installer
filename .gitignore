@@ -1,3 +1,4 @@
+dist/
 build/
 # Generated at runtime
 *.log
