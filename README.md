@@ -258,6 +258,27 @@ config, and gives you:
 ~/xrv/status-xrv.sh
 ```
 
+### Android app (arm64 APK)
+
+XRV also ships as a native Android app for **arm64-v8a, Android 6.0+**.
+
+1. Download `XRV-arm64.apk` and `XRV-arm64.apk.sha256` from the
+   [latest release](https://github.com/jackh0006/XRV-Installer/releases).
+2. Verify: `sha256sum -c XRV-arm64.apk.sha256`.
+3. If you have the older 1.2.x app, uninstall it first: it was signed with an
+   unrecoverable CI debug key, so Android cannot update it in place.
+4. Install the APK, enter your deployment ID and tunnel key, and choose:
+   - **TUN · system-wide** — one Android VPN prompt, then every app is
+     protected. Only one VPN can be active at a time; XRV explains this if
+     another VPN is already connected.
+   - **Proxy only** — exposes `socks5://127.0.0.1:PORT` for v2rayNG or any
+     app that accepts a SOCKS5 upstream, without creating a VPN interface.
+5. On Huawei/EMUI phones, tap **Battery settings** in the app and exclude XRV
+   from battery optimisation.
+
+Full Android build, security and verification details:
+[`android/OPEN_SOURCE.md`](android/OPEN_SOURCE.md).
+
 ### Android / Termux arm64
 
 Install Termux from **F-Droid** (not the Play Store), then:

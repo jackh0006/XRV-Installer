@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.button.MaterialButton xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.XRV.Button.Outlined"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:gravity="start|center_vertical"
+    android:minHeight="56dp"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:textAlignment="viewStart"
+    android:textSize="12sp"
+    app:cornerRadius="14dp" />
