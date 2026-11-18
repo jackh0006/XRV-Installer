@@ -4,6 +4,39 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] — 2026-11-17
+
+### Added
+
+- A complete Android TUN mode (`VpnService`) backed by a source-built,
+  submodule-pinned hev-socks5-tunnel, with mapped DNS, IPv4/IPv6 routes,
+  self-exclusion from the tunnel, and a watchdog.
+- A Material 3 interface with a live status card, traffic/time counters,
+  mode selector, inline validation, copyable proxy address and an About screen.
+- A designed XRV shield logo: adaptive, monochrome, round, legacy PNG and
+  notification variants.
+- Detection and clear guidance when another VPN is already active.
+- Automatic free-port selection and a real disconnect path that closes the
+  listener.
+- `scripts/verify-apk.sh`, which rejects absolute `DT_NEEDED` paths, checks
+  16 KB page alignment, ABIs and the APK signature.
+
+### Fixed
+
+- The Connect crash caused by the JNI shim's absolute build-path dependency.
+- The app icon that was missing from the manifest.
+- Foreground-service lifecycle, Android 14/15/16 service types, notification
+  permission handling, stale state after process death, and mode-switch races.
+- Security hardening: no cleartext, no user CAs, no backups of credentials,
+  no Go log output on Android, minified release with JNI keep rules.
+
+### Changed
+
+- Android version is now 2.0.0 (`versionCode` 20000), target SDK 36.
+- CI builds and verifies a release APK instead of a debug APK.
+- The previous 1.2.x APK cannot be updated in place because it was signed with
+  an unrecoverable CI debug key; uninstall it first.
+
 ## [1.2.4] — 2026-11-15
 
 - Port-80 collision handling maps listener processes to their running systemd

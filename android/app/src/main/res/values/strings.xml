@@ -1,1 +1,119 @@
-<resources><string name="app_name">XRV</string></resources>
+<resources>
+    <string name="app_name">XRV</string>
+    <string name="app_tagline">Encrypted relay client</string>
+
+    <string name="status_disconnected_title">Not connected</string>
+    <string name="status_disconnected_sub">Choose a mode, then connect.</string>
+    <string name="status_starting_title">Connecting…</string>
+    <string name="status_starting_sub">Starting the encrypted engine.</string>
+    <string name="status_proxy_title">Proxy ready</string>
+    <string name="status_proxy_sub">SOCKS5 on 127.0.0.1:%1$d</string>
+    <string name="status_tun_title">Protected</string>
+    <string name="status_tun_sub">All app traffic is routed through XRV.</string>
+    <string name="status_error_title">Connection failed</string>
+    <string name="status_error_sub">Open Details for the exact error.</string>
+
+    <string name="label_uplink">UPLINK</string>
+    <string name="label_downlink">DOWNLINK</string>
+    <string name="label_time">CONNECTED</string>
+    <string name="details">Details</string>
+    <string name="error_details_title">Connection details</string>
+    <string name="close">Close</string>
+
+    <string name="mode_title">CONNECTION MODE</string>
+    <string name="mode_tun">TUN · system-wide</string>
+    <string name="mode_proxy">Proxy only</string>
+    <string name="mode_tun_hint">Every app is protected automatically. Android allows one VPN at a time.</string>
+    <string name="mode_proxy_hint">Exposes SOCKS5 on 127.0.0.1. Point apps that support a proxy at that address; no VPN interface is created.</string>
+    <string name="mode_conflict_hint">Another VPN is active. Android allows only one VPN: TUN mode will ask to replace it, while Proxy-only mode can coexist.</string>
+
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="zero_bytes">0 B</string>
+    <string name="zero_time">00:00</string>
+    <string name="proxy_address">socks5://127.0.0.1:%1$d</string>
+    <string name="proxy_preview">socks5://127.0.0.1:1080</string>
+    <string name="default_port">1080</string>
+    <string name="port_value">%1$d</string>
+    <string name="wallet_entry">%1$s\n%2$s</string>
+    <string name="connect_starting">Starting…</string>
+
+    <string name="advanced_title">Configuration</string>
+    <string name="advanced_summary">Deployment IDs and tunnel key</string>
+    <string name="deployment_1">Deployment ID 1 (required)</string>
+    <string name="deployment_n">Backup deployment ID %1$d (optional)</string>
+    <string name="tunnel_key">Tunnel key</string>
+    <string name="tunnel_key_hint">64 hexadecimal characters</string>
+    <string name="local_port">Local SOCKS5 port</string>
+    <string name="port_helper">If this port is busy, XRV automatically uses the next free one.</string>
+    <string name="clear_saved">Clear saved configuration</string>
+    <string name="clear_title">Clear saved configuration?</string>
+    <string name="clear_message">The encrypted deployment IDs and tunnel key will be deleted from this device.</string>
+    <string name="clear_confirm">Clear</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="proxy_share_title">Use with another app</string>
+    <string name="proxy_share_body">Copy this address into v2rayNG or any app that accepts a SOCKS5 upstream.</string>
+    <string name="copy_address">Copy</string>
+    <string name="address_copied">Proxy address copied</string>
+    <string name="wallet_copied">Address copied</string>
+    <string name="cleared">Configuration cleared</string>
+
+    <string name="battery_title">Keep XRV reliable</string>
+    <string name="battery_body">On Huawei and other battery-optimised phones, exclude XRV from battery optimisation so Android does not suspend the tunnel.</string>
+    <string name="battery_button">Battery settings</string>
+
+    <string name="security_footer">AES-256-GCM relay · Android Keystore · No analytics · No logs</string>
+
+    <string name="vpn_permission_title">Allow XRV VPN?</string>
+    <string name="vpn_permission_message">Android will show its own confirmation. XRV needs this permission only for TUN mode. Proxy-only mode never creates a VPN.</string>
+    <string name="vpn_permission_continue">Continue</string>
+    <string name="vpn_permission_use_proxy">Use proxy mode instead</string>
+    <string name="vpn_conflict_title">Another VPN is active</string>
+    <string name="vpn_conflict_message">Android permits only one active VPN. Continuing in TUN mode will replace the other VPN. If you want to keep it connected, use Proxy-only mode and point that app at XRV.</string>
+    <string name="vpn_conflict_continue">Use TUN anyway</string>
+
+    <string name="error_deployment_field">Invalid deployment ID.</string>
+    <string name="error_duplicate_field">Duplicate deployment ID.</string>
+    <string name="error_key_field">Use exactly 64 hexadecimal characters.</string>
+    <string name="error_port_field">Use a port between 1024 and 65535.</string>
+    <string name="error_no_profile">Enter and save a deployment ID and tunnel key first.</string>
+    <string name="error_start_failed">XRV could not start the connection.</string>
+    <string name="error_tunnel_engine">The TUN engine could not start.</string>
+    <string name="error_tunnel_stopped">The tunnel stopped unexpectedly. Reconnect or check Details.</string>
+    <string name="error_vpn_denied">Android denied the VPN interface. Another VPN may be locked as always-on.</string>
+
+    <string name="notification_channel">XRV connection</string>
+    <string name="notification_channel_description">Shows the state of the XRV tunnel.</string>
+    <string name="notification_proxy_title">XRV proxy is running</string>
+    <string name="notification_proxy_text">SOCKS5 at 127.0.0.1:%1$d</string>
+    <string name="notification_vpn_title">XRV VPN is active</string>
+    <string name="notification_vpn_text">All traffic is routed through the encrypted relay.</string>
+    <string name="notification_vpn_stats">↑ %1$s · ↓ %2$s</string>
+    <string name="notification_starting_proxy">Starting the local proxy…</string>
+    <string name="notification_starting_vpn">Starting the VPN…</string>
+
+    <string name="about">About</string>
+    <string name="about_title">About XRV</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_intro">XRV is a free, open-source client for an encrypted relay that travels over HTTPS. It never contains ads, analytics, remote configuration, or telemetry.</string>
+    <string name="about_how_title">How it works</string>
+    <string name="about_how_body">TUN mode creates a local VPN interface and forwards each connection through the encrypted relay. Proxy-only mode exposes the same encrypted relay as a loopback SOCKS5 proxy so apps such as v2rayNG can use it directly.</string>
+    <string name="about_security_title">Security</string>
+    <string name="about_security_body">Tunnel frames use AES-256-GCM. The tunnel key is encrypted at rest with a non-exportable Android Keystore key. The app logs no payloads or secrets, allows no cleartext traffic, and does not trust user-installed certificate authorities.</string>
+    <string name="about_proxy_title">Using a proxy</string>
+    <string name="about_proxy_body">In Proxy-only mode the address is socks5://127.0.0.1:PORT. DNS is resolved by the exit, so use the SOCKS5 hostname form. Do not route another VPN app through this local proxy while that VPN is also active, or traffic can loop; use TUN mode for system-wide protection.</string>
+    <string name="about_support_title">Support the project</string>
+    <string name="about_support_body">Donations are optional and irreversible. Verify every address in the project source before sending. XRV never asks for a seed phrase or private key.</string>
+    <string name="about_wallets_hint">Tap an address to copy it.</string>
+    <string name="about_source">Source code</string>
+    <string name="about_source_url">https://github.com/jackh0006/XRV-Installer</string>
+    <string name="about_made_by">Made by jackh0006 · jackh109867@gmail.com</string>
+
+    <string name="back">Back</string>
+
+    <plurals name="advanced_configured">
+        <item quantity="one">%d deployment configured</item>
+        <item quantity="other">%d deployments configured</item>
+    </plurals>
+</resources>

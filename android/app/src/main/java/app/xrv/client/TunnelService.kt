@@ -1,26 +1,146 @@
 package app.xrv.client
 
-import android.app.*
+import android.app.Service
+import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
+import kotlin.concurrent.thread
 
+/**
+ * Proxy-only mode: a foreground service that exposes the encrypted relay as a
+ * SOCKS5 listener on 127.0.0.1. It never creates a VPN interface, so it can
+ * coexist with another VPN app that is already active.
+ */
 class TunnelService : Service() {
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val profile = SecureProfileStore(this).load() ?: return START_NOT_STICKY
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel("xrv", "XRV connection", NotificationManager.IMPORTANCE_LOW)
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    companion object {
+        const val ACTION_START = "app.xrv.client.action.START_PROXY"
+        const val ACTION_STOP = "app.xrv.client.action.STOP_PROXY"
+        const val NOTIFICATION_ID = 41
+        private const val OWNER = "proxy"
+
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
+        fun start(context: Context) {
+            val intent = Intent(context, TunnelService::class.java).setAction(ACTION_START)
+            ContextCompat.startForegroundService(context, intent)
         }
-        startForeground(7, NotificationCompat.Builder(this, "xrv").setSmallIcon(android.R.drawable.stat_sys_upload).setContentTitle("XRV connected").setContentText("SOCKS5 at 127.0.0.1:${profile.socksPort}").build())
-        Thread {
-            // The engine never returns configuration or secrets in its error.
-            val result = NativeBridge.start(profile.json())
-            if (result.isNotEmpty()) stopSelf()
-        }.start()
+
+        fun stop(context: Context) {
+            runCatching {
+                context.startService(
+                    Intent(context, TunnelService::class.java).setAction(ACTION_STOP)
+                )
+            }
+        }
+    }
+
+    private var worker: Thread? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        XrvNotifications.ensureChannel(this)
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            shutdown()
+            return START_NOT_STICKY
+        }
+        if (isRunning) return START_STICKY
+
+        if (!startInForeground(getString(R.string.notification_starting_proxy))) {
+            return START_NOT_STICKY
+        }
+        XrvState.starting(this, Mode.PROXY)
+
+        val profile = SecureProfileStore(this).load()
+        if (profile == null) {
+            fail(getString(R.string.error_no_profile))
+            return START_NOT_STICKY
+        }
+
+        worker = thread(name = "xrv-proxy", isDaemon = true) {
+            if (!isRunning) return@thread
+            Engine.start(profile, OWNER)
+                .onSuccess { port ->
+                    if (!isRunning) {
+                        Engine.stop(OWNER)
+                        return@onSuccess
+                    }
+                    updateNotification(port)
+                    XrvState.running(this, Mode.PROXY, port)
+                }
+                .onFailure { fail(it.message ?: getString(R.string.error_start_failed)) }
+        }
         return START_STICKY
     }
-    override fun onDestroy() { NativeBridge.stop(); super.onDestroy() }
+
+    private fun startInForeground(text: String): Boolean {
+        val notification = XrvNotifications.build(
+            this,
+            getString(R.string.notification_proxy_title),
+            text,
+            TunnelService::class.java,
+            ACTION_STOP
+        )
+        return try {
+            Foreground.start(this, NOTIFICATION_ID, notification)
+            isRunning = true
+            true
+        } catch (t: Throwable) {
+            isRunning = false
+            XrvState.failed(this, Mode.PROXY, t.message ?: getString(R.string.error_start_failed))
+            stopSelf()
+            false
+        }
+    }
+
+    private fun updateNotification(port: Int) {
+        val notification = XrvNotifications.build(
+            this,
+            getString(R.string.notification_proxy_title),
+            getString(R.string.notification_proxy_text, port),
+            TunnelService::class.java,
+            ACTION_STOP
+        )
+        runCatching {
+            getSystemService(android.app.NotificationManager::class.java)
+                .notify(NOTIFICATION_ID, notification)
+        }
+    }
+
+    private fun fail(message: String) {
+        isRunning = false
+        Engine.stop(OWNER)
+        XrvState.failed(this, Mode.PROXY, message)
+        Foreground.stop(this)
+        stopSelf()
+    }
+
+    private fun shutdown() {
+        val wasRunning = isRunning || worker != null
+        isRunning = false
+        worker = null
+        Engine.stop(OWNER)
+        if (wasRunning || XrvState.read(this).mode == Mode.PROXY) {
+            XrvState.stopped(this)
+        }
+        Foreground.stop(this)
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        isRunning = false
+        Engine.stop(OWNER)
+        val current = XrvState.read(this)
+        if (current.mode == Mode.PROXY && current.phase != Phase.ERROR) {
+            XrvState.stopped(this)
+        }
+        super.onDestroy()
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 }

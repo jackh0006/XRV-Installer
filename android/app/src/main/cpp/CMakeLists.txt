@@ -1,7 +1,0 @@
-cmake_minimum_required(VERSION 3.22.1)
-project(xrvjni C)
-add_library(xrvjni SHARED xrv_jni.c)
-target_include_directories(xrvjni PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../../../../generated/${ANDROID_ABI}/include)
-add_library(xrvengine SHARED IMPORTED)
-set_target_properties(xrvengine PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../../../../generated/${ANDROID_ABI}/libxrvbridge.so)
-target_link_libraries(xrvjni xrvengine log)

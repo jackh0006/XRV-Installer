@@ -12,6 +12,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"net"
+	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +25,22 @@ import (
 	"github.com/kianmhz/GooseRelayVPN/internal/session"
 	"github.com/kianmhz/GooseRelayVPN/internal/socks"
 )
+
+func init() {
+	// Go on Android also reads /data/misc/keychain/certs-added by default.
+	// Restrict the engine to the immutable system trust store so a user- or
+	// malware-installed CA cannot transparently intercept relay traffic.
+	if runtime.GOOS == "android" {
+		_ = os.Setenv(
+			"SSL_CERT_DIR",
+			"/system/etc/security/cacerts:/apex/com.android.conscrypt/cacerts",
+		)
+	}
+	// Android logcat is readable to the device owner and to some system
+	// components. The relay never needs to emit payloads, targets or
+	// deployment identifiers, so silence the library entirely.
+	log.SetOutput(io.Discard)
+}
 
 type mobileConfig struct {
 	Deployments []string `json:"deployments"`
@@ -69,11 +90,13 @@ func xrv_start_json(raw *C.char) *C.char {
 	if err != nil {
 		return response(err)
 	}
+	listener, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", cfg.SocksPort))
+	if err != nil { return response(fmt.Errorf("local SOCKS port is unavailable")) }
 	ctx, cancel := context.WithCancel(context.Background())
 	state.cancel, state.carrier = cancel, c
 	go func() { _ = c.Run(ctx) }()
 	go func() {
-		_ = socks.Serve(ctx, fmt.Sprintf("127.0.0.1:%d", cfg.SocksPort), "", "", false, socks.SessionFactory(func(target string) *session.Session { return c.NewSession(target) }))
+		_ = socks.ServeListener(ctx, listener, "", "", false, socks.SessionFactory(func(target string) *session.Session { return c.NewSession(target) }))
 	}()
 	return response(nil)
 }
@@ -84,7 +107,9 @@ func xrv_stop() {
 	defer state.Unlock()
 	if state.cancel != nil {
 		shutdown, done := context.WithTimeout(context.Background(), 3*time.Second)
-		state.carrier.Shutdown(shutdown)
+		if state.carrier != nil {
+			state.carrier.Shutdown(shutdown)
+		}
 		done()
 		state.cancel()
 		state.cancel = nil
