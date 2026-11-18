@@ -57,7 +57,8 @@ the generated SOCKS username/password and is cleared from the clipboard after
   system CAs. User-installed MITM CAs are not trusted, and the Go engine is
   restricted to the immutable system trust directory too.
 - Backups and device-transfer extraction are disabled for app data.
-- The Go engine discards its own log output on Android.
+- The Go engine keeps a bounded in-memory log buffer with keys, deployment
+  IDs and proxy credentials redacted. App events persist privately.
 - TUN mode excludes the XRV process from its own VPN, preventing a routing
   loop. It never exposes the SOCKS listener beyond loopback.
 - The loopback SOCKS5 listener requires a randomly generated RFC 1929
