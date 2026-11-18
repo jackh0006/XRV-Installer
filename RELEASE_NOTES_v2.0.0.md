@@ -37,6 +37,21 @@
   builds `assembleRelease`, runs tests/lint, verifies the APK, and the tests no
   longer contain literal credential-shaped strings.
 
+## Critical connection fix (2026-11-18)
+
+- **No traffic could leave the Android engine.** The bridge passed a bare
+  Google edge (for example `216.239.38.120`) to the carrier's fronting
+  configuration, but the carrier requires `host:port` (the Linux config layer
+  appends `:443`). Every fronted request failed with `missing port in
+  address`, so the local SOCKS listener opened but no request ever reached
+  Google. The bridge now normalizes the edge to `host:443`, matching the
+  Linux client exactly. Verified on the host: the fronting probe reaches
+  Google and Apps Script returns HTTP 404 for a deliberately fake deployment
+  instead of a dial error.
+- **Automatic edge selection:** on the first connection, if no edge has been
+  chosen, XRV probes the configured candidates with the real
+  `generate_204` test, stores the fastest, and uses it.
+
 ## Settings and diagnostics update (2026-11-18)
 
 - **Per-app proxy** for TUN mode: all apps, only selected apps, or all except

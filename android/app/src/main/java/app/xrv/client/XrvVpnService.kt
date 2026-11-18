@@ -111,8 +111,20 @@ class XrvVpnService : VpnService() {
         worker = thread(name = "xrv-vpn", isDaemon = true) {
             try {
                 if (shuttingDown) return@thread
+                var edge = XrvSettings.selectedGoogleIp(this)
+                if (edge.isEmpty()) {
+                    val report = EdgeProber.probeSync(XrvSettings.googleCandidates(this))
+                    if (report.best != null) {
+                        edge = report.best
+                        XrvSettings.setSelectedGoogleIp(this, edge)
+                        XrvLog.add("edge", "auto-selected $edge (${report.bestMs} ms)")
+                    } else {
+                        XrvLog.add("edge", "auto-probe failed: ${report.error ?: "no edge"}")
+                    }
+                }
+                if (shuttingDown) return@thread
                 val options = EngineOptions(
-                    googleIp = XrvSettings.selectedGoogleIp(this),
+                    googleIp = edge,
                     coalesceMs = XrvSettings.coalesceMs(this),
                     idleSlots = XrvSettings.idleSlots(this, profile.deployments.size)
                 )

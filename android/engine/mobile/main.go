@@ -54,6 +54,19 @@ type statsResponse struct {
 	Sessions uint64 `json:"sessions"`
 }
 
+// frontingAddress matches the Linux config layer: carrier.FrontingConfig
+// requires host:port, so a bare Google edge must become host:443.
+func frontingAddress(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if _, _, err := net.SplitHostPort(value); err == nil {
+		return value
+	}
+	return net.JoinHostPort(value, "443")
+}
+
 func validCredential(value string, max int) bool {
 	if value == "" || len(value) > max {
 		return false
@@ -108,7 +121,11 @@ func xrv_start_json(raw *C.char) *C.char {
 	if googleIP == "" {
 		googleIP = "216.239.38.120"
 	}
-	if ip := net.ParseIP(googleIP); ip == nil || ip.To4() == nil {
+	ipHost := googleIP
+	if host, _, err := net.SplitHostPort(googleIP); err == nil {
+		ipHost = host
+	}
+	if ip := net.ParseIP(ipHost); ip == nil || ip.To4() == nil {
 		return response(fmt.Errorf("invalid Google edge IP"))
 	}
 	sniHosts := cfg.SNIHosts
@@ -148,7 +165,7 @@ func xrv_start_json(raw *C.char) *C.char {
 		ScriptURLs: urls,
 		AESKeyHex:  cfg.TunnelKey,
 		Fronting: carrier.FrontingConfig{
-			GoogleIP: googleIP,
+			GoogleIP: frontingAddress(googleIP),
 			SNIHosts: sniHosts,
 		},
 		CoalesceStep:       time.Duration(coalesceMs) * time.Millisecond,
