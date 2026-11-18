@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private var advancedOpen = false
     private var pulseAnimator: ObjectAnimator? = null
     private var receiverRegistered = false
+    private var profileCache: Profile? = null
 
     private val stateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) = render()
@@ -87,7 +88,7 @@ class MainActivity : AppCompatActivity() {
         setupActions()
         render()
 
-        if (store.load() == null) {
+        if (profileCache == null) {
             setAdvanced(true, animate = false)
             deploymentInputs.firstOrNull()?.requestFocus()
         }
@@ -172,7 +173,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreProfile() {
-        val profile = store.load() ?: return
+        val profile = store.load() ?: run {
+            profileCache = null
+            return
+        }
+        profileCache = profile
         profile.deployments.forEachIndexed { index, value ->
             deploymentInputs.getOrNull(index)?.setText(value)
         }
@@ -218,7 +223,13 @@ class MainActivity : AppCompatActivity() {
             disconnect()
             return
         }
-        val profile = collectProfile() ?: return
+        val entered = collectProfile() ?: return
+        val existing = store.load()
+        val profile = entered.copy(
+            socksUser = existing?.socksUser.orEmpty(),
+            socksPass = existing?.socksPass.orEmpty()
+        ).ensureCredentials()
+        profileCache = profile
         store.save(profile)
         updateAdvancedSummary()
         requestNotificationPermission()
@@ -440,8 +451,17 @@ class MainActivity : AppCompatActivity() {
         if (showProxy) {
             val address = getString(R.string.proxy_address, snapshot.port)
             binding.proxyText.text = address
-        } else if (running && mode == Mode.TUN) {
-            binding.proxyText.text = getString(R.string.proxy_address, snapshot.port)
+            val profile = profileCache
+            val user = profile?.socksUser.orEmpty()
+            val pass = profile?.socksPass.orEmpty()
+            binding.proxyAuthText.visibility =
+                if (user.isNotEmpty() && pass.isNotEmpty()) View.VISIBLE else View.GONE
+            binding.proxyAuthText.text = getString(R.string.proxy_auth_format, user, pass)
+        } else {
+            binding.proxyAuthText.visibility = View.GONE
+            if (running && mode == Mode.TUN) {
+                binding.proxyText.text = getString(R.string.proxy_address, snapshot.port)
+            }
         }
 
         binding.detailsButton.visibility = if (failed) View.VISIBLE else View.GONE
@@ -535,8 +555,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateAdvancedSummary() {
-        val profile = store.load()
-        val count = profile?.deployments?.size ?: 0
+        val count = profileCache?.deployments?.size ?: 0
         binding.advancedSummary.text = if (count == 0) {
             getString(R.string.advanced_summary)
         } else {
@@ -546,8 +565,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun copyProxyAddress() {
         val snapshot = XrvState.read(this)
-        val port = if (snapshot.port > 0) snapshot.port else (store.load()?.socksPort ?: Profile.DEFAULT_PORT)
-        val address = getString(R.string.proxy_address, port)
+        val profile = profileCache
+        val port = if (snapshot.port > 0) snapshot.port else (profile?.socksPort ?: Profile.DEFAULT_PORT)
+        val address = if (profile != null && profile.socksUser.isNotEmpty() && profile.socksPass.isNotEmpty()) {
+            getString(R.string.proxy_address_auth, profile.socksUser, profile.socksPass, port)
+        } else {
+            getString(R.string.proxy_address, port)
+        }
         val clipboard = getSystemService(ClipboardManager::class.java) ?: return
         clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), address))
         toast(getString(R.string.address_copied))
@@ -564,7 +588,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showDetails() {
         val snapshot = XrvState.read(this)
-        val profile = store.load()
+        val profile = profileCache
         val details = buildString {
             appendLine("Version: ${BuildConfig.VERSION_NAME}")
             appendLine("Mode: ${snapshot.mode ?: selectedMode()}")
@@ -588,6 +612,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.clear_message)
             .setPositiveButton(R.string.clear_confirm) { _, _ ->
                 store.clear()
+                profileCache = null
                 deploymentInputs.forEach { it.setText("") }
                 binding.keyInput.setText("")
                 binding.portInput.setText(getString(R.string.port_value, Profile.DEFAULT_PORT))

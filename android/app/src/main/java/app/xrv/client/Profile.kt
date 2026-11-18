@@ -2,6 +2,7 @@ package app.xrv.client
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.security.SecureRandom
 
 /**
  * Non-secret connection settings are kept in [XrvSettings]; this object only
@@ -10,18 +11,33 @@ import org.json.JSONObject
 data class Profile(
     val deployments: List<String>,
     val tunnelKey: String,
-    val socksPort: Int = DEFAULT_PORT
+    val socksPort: Int = DEFAULT_PORT,
+    val socksUser: String = "",
+    val socksPass: String = ""
 ) {
     fun normalized(): Profile = copy(
         deployments = deployments.map { normalizeDeployment(it) }.filter { it.isNotEmpty() },
         tunnelKey = normalizeKey(tunnelKey),
-        socksPort = socksPort
+        socksPort = socksPort,
+        socksUser = socksUser.trim(),
+        socksPass = socksPass.trim()
     )
+
+    /** The loopback proxy requires RFC 1929 auth so other apps cannot use it. */
+    fun ensureCredentials(): Profile {
+        if (socksUser.isNotEmpty() && socksPass.isNotEmpty()) return this
+        return copy(
+            socksUser = "xrv" + randomToken(6),
+            socksPass = randomToken(16)
+        )
+    }
 
     fun json(): String = JSONObject().apply {
         put("deployments", JSONArray(deployments))
         put("tunnelKey", tunnelKey)
         put("socksPort", socksPort)
+        put("socksUser", socksUser)
+        put("socksPass", socksPass)
     }.toString()
 
     companion object {
@@ -58,8 +74,23 @@ data class Profile(
             return Profile(
                 deployments = List(ids.length()) { ids.getString(it) },
                 tunnelKey = o.getString("tunnelKey"),
-                socksPort = o.optInt("socksPort", DEFAULT_PORT)
+                socksPort = o.optInt("socksPort", DEFAULT_PORT),
+                socksUser = o.optString("socksUser", ""),
+                socksPass = o.optString("socksPass", "")
             )
+        }
+
+        private fun randomToken(bytes: Int): String {
+            val data = ByteArray(bytes)
+            SecureRandom().nextBytes(data)
+            val digits = "0123456789abcdef"
+            val out = CharArray(data.size * 2)
+            for (i in data.indices) {
+                val value = data[i].toInt() and 0xff
+                out[i * 2] = digits[value ushr 4]
+                out[i * 2 + 1] = digits[value and 0x0f]
+            }
+            return String(out)
         }
 
         /** Returns a user-facing error, or null when the profile is valid. */

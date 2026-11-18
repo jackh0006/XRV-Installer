@@ -120,7 +120,7 @@ class XrvVpnService : VpnService() {
                     return@thread
                 }
                 tun = fd
-                val config = writeHevConfig(port)
+                val config = writeHevConfig(port, profile)
                 if (!TProxyService.TProxyStartService(config.absolutePath, fd.fd)) {
                     throw IllegalStateException(getString(R.string.error_tunnel_engine))
                 }
@@ -189,7 +189,7 @@ class XrvVpnService : VpnService() {
         )
     }
 
-    private fun writeHevConfig(port: Int): File {
+    private fun writeHevConfig(port: Int, profile: Profile): File {
         val file = File(filesDir, "xrv-tun.yml")
         file.writeText(
             buildString {
@@ -204,6 +204,10 @@ class XrvVpnService : VpnService() {
                 appendLine("  port: $port")
                 appendLine("  address: 127.0.0.1")
                 appendLine("  udp: 'udp'")
+                if (profile.socksUser.isNotEmpty() && profile.socksPass.isNotEmpty()) {
+                    appendLine("  username: '${profile.socksUser}'")
+                    appendLine("  password: '${profile.socksPass}'")
+                }
                 appendLine("mapdns:")
                 appendLine("  address: $TUN_DNS")
                 appendLine("  port: 53")

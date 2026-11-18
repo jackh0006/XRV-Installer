@@ -46,6 +46,20 @@ type mobileConfig struct {
 	Deployments []string `json:"deployments"`
 	TunnelKey   string   `json:"tunnelKey"`
 	SocksPort   int      `json:"socksPort"`
+	SocksUser   string   `json:"socksUser"`
+	SocksPass   string   `json:"socksPass"`
+}
+
+func validCredential(value string, max int) bool {
+	if value == "" || len(value) > max {
+		return false
+	}
+	for _, r := range value {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') {
+			return false
+		}
+	}
+	return true
 }
 
 var state struct {
@@ -78,6 +92,13 @@ func xrv_start_json(raw *C.char) *C.char {
 	if _, err := hex.DecodeString(cfg.TunnelKey); err != nil {
 		return response(fmt.Errorf("invalid configuration"))
 	}
+	if (cfg.SocksUser == "") != (cfg.SocksPass == "") {
+		return response(fmt.Errorf("invalid configuration"))
+	}
+	if cfg.SocksUser != "" &&
+		(!validCredential(cfg.SocksUser, 64) || !validCredential(cfg.SocksPass, 128)) {
+		return response(fmt.Errorf("invalid configuration"))
+	}
 	urls := make([]string, 0, len(cfg.Deployments))
 	for _, id := range cfg.Deployments {
 		id = strings.TrimSpace(id)
@@ -96,7 +117,7 @@ func xrv_start_json(raw *C.char) *C.char {
 	state.cancel, state.carrier = cancel, c
 	go func() { _ = c.Run(ctx) }()
 	go func() {
-		_ = socks.ServeListener(ctx, listener, "", "", false, socks.SessionFactory(func(target string) *session.Session { return c.NewSession(target) }))
+		_ = socks.ServeListener(ctx, listener, cfg.SocksUser, cfg.SocksPass, false, socks.SessionFactory(func(target string) *session.Session { return c.NewSession(target) }))
 	}()
 	return response(nil)
 }

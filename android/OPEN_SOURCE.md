@@ -19,11 +19,15 @@ network endpoint is the Apps Script deployment ID entered by the owner.
 - The tunnel key is never logged, written to a world-readable file, or put in
   an APK resource.
 - `usesCleartextTraffic=false` plus a network-security config that trusts only
-  system CAs. User-installed MITM CAs are not trusted.
+  system CAs. User-installed MITM CAs are not trusted, and the Go engine is
+  restricted to the immutable system trust directory too.
 - Backups and device-transfer extraction are disabled for app data.
 - The Go engine discards its own log output on Android.
 - TUN mode excludes the XRV process from its own VPN, preventing a routing
   loop. It never exposes the SOCKS listener beyond loopback.
+- The loopback SOCKS5 listener requires a randomly generated RFC 1929
+  username/password. The Copy action includes them; TUN mode passes them to
+  hev internally.
 - No `QUERY_ALL_PACKAGES`, no accessibility service, no device-admin access.
 
 ## Requirements
@@ -108,10 +112,11 @@ the foreground service.
 ## Using proxy-only mode
 
 1. Select **Proxy only** and connect.
-2. The status card shows `socks5://127.0.0.1:PORT`.
+2. The status card shows `socks5://127.0.0.1:PORT` and the share card shows the
+   generated username/password. The Copy action includes them in the URL.
 3. In v2rayNG or another proxy client, add a **SOCKS5** server with host
-   `127.0.0.1` and the displayed port. Use the SOCKS5 hostname form so DNS is
-   resolved by the exit.
+   `127.0.0.1`, the displayed port, and those credentials. Use the SOCKS5
+   hostname form so DNS is resolved by the exit.
 
 Do not route another VPN app's outbound through this local proxy while that
 same VPN is active: the engine's own HTTPS traffic would then go back through

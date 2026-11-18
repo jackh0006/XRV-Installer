@@ -31,3 +31,5 @@ android/xrv-release.jks
 android/XRV-arm64-icon.png
 android/.kotlin/
 android/*.idsig
+hs_err_pid*.log
+core.*
