@@ -4,6 +4,15 @@ All notable changes to XRV Installer are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions use [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-fronting-fix] — 2026-11-18
+
+### Fixed
+
+- The Android bridge passed a bare Google edge to the carrier fronting config;
+  the carrier needs `host:port`. Every request failed with `missing port in
+  address`, so there was no traffic despite a listening SOCKS port. Normalize
+  the edge to `host:443` and auto-select a reachable edge on first connect.
+
 ## [2.0.0-settings] — 2026-11-18
 
 ### Added

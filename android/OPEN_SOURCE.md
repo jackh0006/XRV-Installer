@@ -20,7 +20,9 @@ options:
   selected apps. The picker lists installed apps and the VPN is rebuilt with
   Android's allow/deny lists on the next connection. XRV always excludes
   itself so its relay traffic cannot loop through its own tunnel.
-- **Google edge** — the same four Google entry points as `xrv-client.sh`
+- **Google edge** — the carrier receives the selected edge as `host:443`
+  (the Linux config layer does the same; a bare IP would fail every dial).
+  The same four Google entry points as `xrv-client.sh`
   (`216.239.32.120`, `216.239.34.120`, `216.239.36.120`, `216.239.38.120`).
   **Find fastest** performs a real HTTPS `generate_204` request to each
   candidate, shows latency, and stores the fastest. Add or remove IPv4

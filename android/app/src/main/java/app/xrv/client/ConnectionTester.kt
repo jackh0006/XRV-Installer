@@ -12,33 +12,29 @@ import kotlin.concurrent.thread
 object EdgeProber {
     private val main = Handler(Looper.getMainLooper())
 
-    fun run(candidates: List<String>, callback: (EdgeReport) -> Unit) {
+    fun probeSync(candidates: List<String>): EdgeReport {
         val ips = candidates.filter { IpUtils.isIPv4(it) }.distinct().take(32)
         if (ips.isEmpty()) {
-            callback(EdgeReport(emptyList(), null, 0, "Add at least one valid IPv4 address."))
-            return
+            return EdgeReport(emptyList(), null, 0, "Add at least one valid IPv4 address.")
         }
-        thread(name = "xrv-edge-probe", isDaemon = true) {
-            val error = NativeBridge.loadError
-            val report = if (error != null) {
-                EdgeReport(emptyList(), null, 0, "Native engine unavailable: $error")
-            } else {
-                val request = JSONObject().put("ips", JSONArray(ips)).put("timeoutMs", 6_000)
-                val raw = runCatching {
-                    NativeBridge.probeEdges(request.toString())
-                }.getOrElse { t ->
-                    main.post {
-                        callback(
-                            EdgeReport(
-                                emptyList(), null, 0,
-                                t.message ?: "Google-edge probe failed"
-                            )
-                        )
-                    }
-                    return@thread
-                }
-                NetResults.edges(raw)
+        val error = NativeBridge.loadError
+        if (error != null) {
+            return EdgeReport(emptyList(), null, 0, "Native engine unavailable: $error")
+        }
+        val request = JSONObject().put("ips", JSONArray(ips)).put("timeoutMs", 6_000)
+        val raw = runCatching { NativeBridge.probeEdges(request.toString()) }
+            .getOrElse { t ->
+                return EdgeReport(
+                    emptyList(), null, 0,
+                    t.message ?: "Google-edge probe failed"
+                )
             }
+        return NetResults.edges(raw)
+    }
+
+    fun run(candidates: List<String>, callback: (EdgeReport) -> Unit) {
+        thread(name = "xrv-edge-probe", isDaemon = true) {
+            val report = probeSync(candidates)
             main.post { callback(report) }
         }
     }

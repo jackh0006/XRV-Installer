@@ -40,3 +40,16 @@ func TestUniqueIPv4(t *testing.T) {
 		}
 	}
 }
+
+func TestFrontingAddress(t *testing.T) {
+	cases := map[string]string{
+		"216.239.38.120":      "216.239.38.120:443",
+		" 216.239.38.120 ":    "216.239.38.120:443",
+		"216.239.38.120:8443": "216.239.38.120:8443",
+	}
+	for in, want := range cases {
+		if got := frontingAddress(in); got != want {
+			t.Errorf("frontingAddress(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
