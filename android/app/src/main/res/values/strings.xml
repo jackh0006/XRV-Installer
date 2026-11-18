@@ -64,7 +64,7 @@
     <string name="battery_body">On Huawei and other battery-optimised phones, exclude XRV from battery optimisation so Android does not suspend the tunnel.</string>
     <string name="battery_button">Battery settings</string>
 
-    <string name="security_footer">AES-256-GCM relay · Android Keystore · No analytics · No logs</string>
+    <string name="security_footer">AES-256-GCM relay · Android Keystore · No analytics · Redacted local logs</string>
 
     <string name="vpn_permission_title">Allow XRV VPN?</string>
     <string name="vpn_permission_message">Android will show its own confirmation. XRV needs this permission only for TUN mode. Proxy-only mode never creates a VPN.</string>
@@ -102,7 +102,7 @@
     <string name="about_how_title">How it works</string>
     <string name="about_how_body">TUN mode creates a local VPN interface and forwards each connection through the encrypted relay. Proxy-only mode exposes the same encrypted relay as a loopback SOCKS5 proxy so apps such as v2rayNG can use it directly.</string>
     <string name="about_security_title">Security</string>
-    <string name="about_security_body">Tunnel frames use AES-256-GCM. The tunnel key is encrypted at rest with a non-exportable Android Keystore key. The app logs no payloads or secrets, allows no cleartext traffic, and does not trust user-installed certificate authorities.</string>
+    <string name="about_security_body">Tunnel frames use AES-256-GCM. The tunnel key is encrypted at rest with a non-exportable Android Keystore key. The app logs no payloads or secrets; its local event and native logs are bounded and redacted. It allows no cleartext traffic and does not trust user-installed certificate authorities.</string>
     <string name="about_proxy_title">Using a proxy</string>
     <string name="about_proxy_body">In Proxy-only mode the address is socks5://127.0.0.1:PORT. DNS is resolved by the exit, so use the SOCKS5 hostname form. Do not route another VPN app through this local proxy while that VPN is also active, or traffic can loop; use TUN mode for system-wide protection.</string>
     <string name="about_support_title">Support the project</string>

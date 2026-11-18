@@ -28,7 +28,7 @@
   the engine; stale RUNNING state after a process kill is cleared; watchdog
   detects an unexpectedly stopped tunnel.
 - **Security hardening.** No cleartext traffic, no user-installed CAs, no
-  backups/device-transfer of credentials, no Go logging of relay identifiers,
+  backups/device-transfer of credentials, redacted/bounded local logs,
   a randomly authenticated loopback proxy, and a minified release with JNI
   keep rules.
 - **Port conflicts.** If the chosen local port is busy, XRV picks the next free
