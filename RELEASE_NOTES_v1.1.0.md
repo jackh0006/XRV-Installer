@@ -78,7 +78,7 @@ Every client must then be updated.
 
 - `bash -n` on every script.
 - ShellCheck warning-level clean.
-- Unit tests for validators, deployment normalisation, JSON escaping and the
+- Unit tests for validators, deployment normalization, JSON escaping and the
   deployment pool.
 - Offline client install with a temporary HOME, checking file modes, config
   schema, secret redaction and uninstall.

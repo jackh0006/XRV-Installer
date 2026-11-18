@@ -1,0 +1,19 @@
+Package: xrv-client
+Version: @VERSION@
+Section: net
+Priority: optional
+Architecture: @ARCH@
+Maintainer: jackh0006 <jackh109867@gmail.com>
+Homepage: https://github.com/jackh0006/XRV-Installer
+Depends: ca-certificates
+Recommends: systemd
+Installed-Size: @SIZE@
+Description: XRV encrypted relay client
+ XRV carries TCP traffic through an encrypted relay over ordinary Google
+ HTTPS. This package installs the same relay engine as the XRV Android client,
+ an authenticated local SOCKS5 proxy, Google edge probing, a live tunnel test,
+ logs, and a systemd user service.
+ .
+ It is the Linux counterpart of the Android app's proxy-only mode. Point apps
+ at the local SOCKS5 proxy, or use your system's VPN tooling for system-wide
+ routing. The server installer and complete guide are in the source repository.

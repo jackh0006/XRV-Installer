@@ -30,7 +30,7 @@ func TestNextQuotaReset_AdvancesAcrossMidnightPacific(t *testing.T) {
 func TestBumpDailyCount_RollsOverAtReset(t *testing.T) {
 	c := &Client{endpoints: []relayEndpoint{{url: "u1"}}}
 
-	// First bump initialises the window and increments to 1.
+	// First bump initializes the window and increments to 1.
 	c.bumpDailyCount(0)
 	if got := c.endpoints[0].dailyCount; got != 1 {
 		t.Fatalf("after 1 bump dailyCount=%d want 1", got)

@@ -106,7 +106,7 @@ func classifyRelayErrorBody(body []byte) (reason string, hard bool) {
 			return "Apps Script auth error — check: (1) AES key matches on both sides, " +
 				"(2) deployment is set to 'Execute as: Me / Anyone can access', " +
 				"(3) script_keys uses the Deployment ID (not the Script ID), " +
-				"(4) the owning Google account has authorised the script by running it manually", true
+				"(4) the owning Google account has authorized the script by running it manually", true
 		}
 	}
 

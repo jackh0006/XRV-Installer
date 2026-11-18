@@ -8,6 +8,7 @@ case "$ABI" in
     arm64-v8a)   triple=aarch64-linux-android;      arch=arm64 ;;
     armeabi-v7a) triple=armv7a-linux-androideabi;   arch=arm ;;
     x86_64)      triple=x86_64-linux-android;       arch=amd64 ;;
+    x86)         triple=i686-linux-android;         arch=386 ;;
     *) echo "Unsupported ABI: $ABI" >&2; exit 2 ;;
 esac
 

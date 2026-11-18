@@ -45,6 +45,11 @@ class AboutActivity : AppCompatActivity() {
 
         binding.versionText.text = getString(R.string.about_version, BuildConfig.VERSION_NAME)
         binding.backButton.setOnClickListener { finish() }
+        binding.guideButton.setOnClickListener {
+            runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.about_guide_url))))
+            }
+        }
         binding.sourceButton.setOnClickListener {
             runCatching {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.about_source_url))))

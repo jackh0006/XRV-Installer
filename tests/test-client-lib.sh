@@ -30,7 +30,7 @@ assert_false "rejects port 70000" valid_port 70000
 assert_eq "https://vpn.example.com:10443" "$(RELAY_HOST=vpn.example.com RELAY_SCHEME=https relay_base_for_port 10443)" "builds a custom HTTPS relay port"
 assert_eq "https://vpn.example.com" "$(RELAY_HOST=vpn.example.com RELAY_SCHEME=https relay_base_for_port 443)" "omits default HTTPS port"
 
-printf '\n== deployment ID normalisation\n'
+printf '\n== deployment ID normalization\n'
 assert_eq "AKfycbTEST_123" \
   "$(normalize_deployment_id 'https://script.google.com/macros/s/AKfycbTEST_123/exec')" \
   "extracts ID from a full /exec URL"
