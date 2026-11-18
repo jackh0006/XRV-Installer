@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  security-events: write
 
 jobs:
   verify:
@@ -74,7 +75,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: gh release upload "$RELEASE_TAG" XRV-arm64.apk XRV-arm64.apk.sha256 --clobber
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always() && hashFiles('android/app/build/reports/lint-results.sarif') != ''
         with:
           sarif_file: android/app/build/reports/lint-results.sarif
