@@ -3,7 +3,7 @@
 [![CI](https://github.com/jackh0006/XRV-Installer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/jackh0006/XRV-Installer/actions/workflows/test.yml)
 [![Release](https://img.shields.io/github/v/release/jackh0006/XRV-Installer?display_name=tag&sort=semver)](https://github.com/jackh0006/XRV-Installer/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-Linux%20amd64%20%7C%20Linux%20arm64%20%7C%20Termux%20arm64-blue)](#requirements)
+[![Platforms](https://img.shields.io/badge/platforms-Linux%20amd64%20%7C%20arm64%20%7C%20armhf%20%7C%20i386%20%7C%20Android%20arm64%20%7C%20universal-blue)](#requirements)
 [![Security policy](https://img.shields.io/badge/security-policy-blue)](SECURITY.md)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 

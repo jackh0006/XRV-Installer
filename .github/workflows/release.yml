@@ -32,9 +32,7 @@ jobs:
 
       - name: Generate checksums
         run: |
-          sha256sum xrv-install.sh xrv-client.sh README.md CHANGELOG.md \
-            RELEASE_NOTES_v1.2.4.md DONATE.md SUPPORT.md LICENSE SECURITY.md \
-            CONTRIBUTING.md CODE_OF_CONDUCT.md docs/ARCHITECTURE.md docs/TROUBLESHOOTING.md docs/USER-GUIDE.md > SHA256SUMS.txt
+          sha256sum xrv-install.sh xrv-client.sh > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Create GitHub release
@@ -44,18 +42,6 @@ jobs:
             xrv-install.sh
             xrv-client.sh
             SHA256SUMS.txt
-            README.md
-            CHANGELOG.md
-            RELEASE_NOTES_v1.2.4.md
-            DONATE.md
-            SUPPORT.md
-            LICENSE
-            SECURITY.md
-            CONTRIBUTING.md
-            CODE_OF_CONDUCT.md
-            docs/ARCHITECTURE.md
-            docs/TROUBLESHOOTING.md
-            docs/USER-GUIDE.md
           generate_release_notes: true
           draft: false
           prerelease: false
