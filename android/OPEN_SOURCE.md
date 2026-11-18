@@ -104,12 +104,11 @@ cp app/build/outputs/apk/release/app-release.apk XRV-arm64.apk
    (MIT), pinned as a submodule and driven through its documented
    `hev.htproxy.TProxyService` JNI class.
 
-The release APK targets `arm64-v8a` only. An APK must never claim an ABI it did
-not build and test. For an emulator smoke test you may build an additional ABI:
+The default build produces splits for `arm64-v8a`, `armeabi-v7a`, `x86`, and
+`x86_64`, plus a universal APK. To build only one ABI for a quick test, use:
 
 ```bash
-GO_BIN="$(command -v go)" bash scripts/build-android-engine.sh x86_64
-./gradlew assembleDebug -PxrvAbis=arm64-v8a,x86_64
+./gradlew assembleRelease -PxrvAbis=arm64-v8a
 ```
 
 ### Release signing
