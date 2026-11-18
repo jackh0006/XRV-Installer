@@ -34,7 +34,7 @@ mkdir -p "$out/include" "$root/build/hev-obj"
     CGO_ENABLED=1 GOOS=android GOARCH="$arch" CC="$clang" \
         CGO_CFLAGS="-I$sysroot_include" \
         "$go_bin" build -trimpath -buildmode=c-shared \
-        -ldflags='-s -w -extldflags=-Wl,-soname,libxrvbridge.so' \
+        -ldflags='-s -w -extldflags=-Wl,-soname,libxrvbridge.so,-z,max-page-size=16384,-z,common-page-size=16384' \
         -o "$out/libxrvbridge.so" ./mobile
 )
 mv "$out/libxrvbridge.h" "$out/include/libxrvbridge.h"
