@@ -73,7 +73,7 @@ Create an A record:
 vpn.example.com.   300   IN   A   203.0.113.10
 ```
 
-If Cloudflare is in front, set the record to **DNS only** (grey cloud) while
+If Cloudflare is in front, set the record to **DNS only** (gray cloud) while
 issuing the certificate. The HTTP-01 challenge must reach your VPS directly.
 
 ### `HAProxy rejected the generated configuration`

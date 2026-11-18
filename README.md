@@ -28,10 +28,10 @@ Browser / app
 
 - **End-to-end encryption:** AES-256-GCM. Google never holds the key.
 - **Server:** Ubuntu/Debian Linux amd64 or arm64, root.
-- **Client:** Ubuntu/Linux amd64 (also arm64) and Android Termux arm64.
+- **Client:** Linux amd64, arm64, armhf or i386, and Android (arm64 or universal).
 - **License:** MIT. No tracking, no telemetry, no closed pieces.
 
-**New here? Read the [plain-language guide](docs/USER-GUIDE.md). It explains
+**New here? Read the [complete start-to-finish guide](GUIDE.md). It explains
 every step, every word, and every error without assuming any networking
 knowledge.**
 
@@ -96,7 +96,7 @@ For a printable, one-screen version, see [Quick Start](docs/QUICK-START.md).
 
 **Quick links:**
 [Quick Start](docs/QUICK-START.md) ·
-[Simple guide](docs/USER-GUIDE.md) ·
+[Complete guide](GUIDE.md) ·
 [Documentation site](https://jackh0006.github.io/XRV-Installer/) ·
 [Install](#server-install-vps) ·
 [Client](#client-install) ·
@@ -233,7 +233,40 @@ Copy the **relay URL** and the **tunnel key** into the client installer.
 
 ## Client install
 
-### Ubuntu / Linux amd64 (or arm64)
+### Ready-to-install packages
+
+Download from the [latest release](https://github.com/jackh0006/XRV-Installer/releases):
+
+| Platform | File |
+|---|---|
+| Android, most phones | `XRV-Client-Android-arm64.apk` |
+| Android, all CPU types | `XRV-Client-Android-universal.apk` |
+| Debian/Ubuntu, Intel/AMD 64-bit | `XRV-Client-linux-amd64.deb` |
+| Debian/Ubuntu, ARM 64-bit | `XRV-Client-linux-arm64.deb` |
+| Debian/Ubuntu, ARM 32-bit | `XRV-Client-linux-armhf.deb` |
+| Debian/Ubuntu, Intel 32-bit | `XRV-Client-linux-i386.deb` |
+
+Checksums: `XRV-Client-Android-SHA256SUMS.txt` and
+`XRV-Client-linux-SHA256SUMS.txt`.
+
+### Debian / Ubuntu package
+
+```bash
+sudo dpkg -i XRV-Client-linux-amd64.deb
+xrv-client setup
+systemctl --user enable --now xrv-client
+xrv-client test
+```
+
+Replace `amd64` with `arm64`, `armhf`, or `i386` if needed. The package installs
+the same relay engine as the Android app's proxy-only mode, with Google edge
+testing, a live tunnel test, logs, and a systemd user service. The full guide is
+in `GUIDE.md` and in `/usr/share/doc/xrv-client/`.
+
+### Ubuntu / Linux script installer
+
+The standalone script remains available for all Linux distributions that have
+`bash` and `curl`.
 
 ```bash
 bash xrv-client.sh
@@ -258,13 +291,18 @@ config, and gives you:
 ~/xrv/status-xrv.sh
 ```
 
-### Android app (arm64 APK)
+### Android app
 
-XRV also ships as a native Android app for **arm64-v8a, Android 6.0+**.
+XRV ships as a native Android app for **Android 6.0+**.
 
-1. Download `XRV-arm64.apk` and `XRV-arm64.apk.sha256` from the
+- `XRV-Client-Android-arm64.apk` is the recommended small package for modern
+  arm64 phones, including the Huawei Y9 2019.
+- `XRV-Client-Android-universal.apk` contains arm64, 32-bit ARM, x86, and
+  x86_64 libraries for every supported Android device and emulator.
+
+1. Download the APK and the matching checksum from the
    [latest release](https://github.com/jackh0006/XRV-Installer/releases).
-2. Verify: `sha256sum -c XRV-arm64.apk.sha256`.
+2. Verify it with `XRV-Client-Android-SHA256SUMS.txt`.
 3. If you have the older 1.2.x app, uninstall it first: it was signed with an
    unrecoverable CI debug key, so Android cannot update it in place.
 4. Install the APK, enter your deployment ID and tunnel key, and choose:
@@ -281,7 +319,7 @@ XRV also ships as a native Android app for **arm64-v8a, Android 6.0+**.
      compares it with the phone's direct IP.
    - **Logs** — app events and native relay logs with secrets redacted.
 6. On Huawei/EMUI phones, tap **Battery settings** in the app and exclude XRV
-   from battery optimisation.
+   from battery optimization.
 
 Full Android build, security and verification details:
 [`android/OPEN_SOURCE.md`](android/OPEN_SOURCE.md).
@@ -517,7 +555,7 @@ bash tests/run-all.sh
 The test suite covers:
 
 - shell syntax and ShellCheck;
-- every input validator and deployment-ID normaliser;
+- every input validator and deployment-ID normalizer;
 - config generation and JSON schema;
 - a complete offline client install in a temporary HOME;
 - HAProxy configuration validation (when HAProxy is installed);

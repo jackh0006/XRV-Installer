@@ -234,6 +234,17 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/guideButton"
+            style="@style/Widget.XRV.Button.Outlined"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/about_guide"
+            app:icon="@drawable/ic_info"
+            app:iconGravity="textStart"
+            app:iconTint="@color/xrv_on_surface" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/sourceButton"
             style="@style/Widget.XRV.Button.Outlined"
             android:layout_width="match_parent"

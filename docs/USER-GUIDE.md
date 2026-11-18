@@ -500,7 +500,7 @@ The domain's address does not match the VPS.
 3. Wait a few minutes.
 4. Try again.
 
-If Cloudflare is in front, set the record to **DNS only** (grey cloud) while
+If Cloudflare is in front, set the record to **DNS only** (gray cloud) while
 issuing the certificate.
 
 ### “Pre-flight FAILED … 404” on the client

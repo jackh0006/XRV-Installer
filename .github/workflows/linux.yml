@@ -1,0 +1,86 @@
+name: Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub release tag to receive the packages
+        required: true
+        default: v1.2.4
+        type: string
+      publish_release:
+        description: Attach the packages and checksums to the selected release
+        required: true
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - "android/engine/**"
+      - "linux/**"
+      - "GUIDE.md"
+      - "README.md"
+      - "docs/**"
+      - ".github/workflows/linux.yml"
+  push:
+    branches: [main]
+    paths:
+      - "android/engine/**"
+      - "linux/**"
+      - "GUIDE.md"
+      - "README.md"
+      - "docs/**"
+      - ".github/workflows/linux.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  packages:
+    name: Build, test and verify Linux packages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.x"
+          cache-dependency-path: android/engine/go.sum
+      - name: Go tests
+        working-directory: android/engine
+        run: go test ./...
+      - name: ShellCheck packaging script
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck -S warning -x linux/scripts/build-deb.sh
+      - name: Build and smoke-test all Debian packages
+        run: bash linux/scripts/build-deb.sh --all --output dist
+      - name: Verify package metadata and contents
+        run: |
+          set -e
+          for deb in dist/XRV-Client-linux-*.deb; do
+            echo "== $deb"
+            dpkg-deb --info "$deb" | grep -E 'Package:|Version:|Architecture:'
+            dpkg-deb --contents "$deb" | grep -q './usr/bin/xrv-client'
+            dpkg-deb --contents "$deb" | grep -q './lib/systemd/user/xrv-client.service'
+            dpkg-deb --contents "$deb" | grep -q './usr/share/doc/xrv-client/GUIDE.md'
+          done
+          rm -rf /tmp/xrv-deb
+          mkdir -p /tmp/xrv-deb
+          dpkg-deb -x dist/XRV-Client-linux-amd64.deb /tmp/xrv-deb
+          /tmp/xrv-deb/usr/bin/xrv-client version
+          file /tmp/xrv-deb/usr/bin/xrv-client
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XRV-Client-linux
+          path: |
+            dist/XRV-Client-linux-*.deb
+            dist/XRV-Client-linux-SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Publish release assets
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" dist/XRV-Client-linux-*.deb \
+            dist/XRV-Client-linux-SHA256SUMS.txt --clobber

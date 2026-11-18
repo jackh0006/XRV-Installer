@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+echo "XRV Client installed."
+echo ""
+echo "Next steps:"
+echo "  1. xrv-client setup"
+echo "  2. systemctl --user enable --now xrv-client"
+echo "  3. xrv-client test"
+echo ""
+echo "Guide: /usr/share/doc/xrv-client/GUIDE.md"
+exit 0

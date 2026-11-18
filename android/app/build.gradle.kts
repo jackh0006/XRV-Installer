@@ -3,6 +3,12 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val xrvAbis = (findProperty("xrvAbis") as? String)
+    ?.split(',')
+    ?.map { it.trim() }
+    ?.filter { it.isNotEmpty() }
+    ?: listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+
 android {
     namespace = "app.xrv.client"
     compileSdk = 36
@@ -15,12 +21,7 @@ android {
         versionCode = 20000
         versionName = "2.0.0"
         buildConfigField("String", "ENGINE_VERSION", "\"2.0.0\"")
-        val abis = (findProperty("xrvAbis") as? String)
-            ?.split(',')
-            ?.map { it.trim() }
-            ?.filter { it.isNotEmpty() }
-            ?: listOf("arm64-v8a")
-        ndk { abiFilters += abis }
+        ndk { abiFilters += xrvAbis }
     }
 
     val releaseStore = System.getenv("XRV_KEYSTORE")
@@ -57,6 +58,15 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include(*xrvAbis.toTypedArray())
+            isUniversalApk = true
         }
     }
 
@@ -103,14 +113,14 @@ kotlin {
     }
 }
 
-tasks.register<Exec>("buildXrvArm64Engine") {
+tasks.register<Exec>("buildXrvEngines") {
     workingDir = rootProject.projectDir
-    commandLine("bash", "scripts/build-android-engine.sh", "arm64-v8a")
+    commandLine("bash", "scripts/build-android-all.sh", xrvAbis.joinToString(","))
     environment("GO_BIN", System.getenv("GO_BIN") ?: "go")
 }
 
 tasks.named("preBuild").configure {
-    dependsOn("buildXrvArm64Engine")
+    dependsOn("buildXrvEngines")
 }
 
 dependencies {

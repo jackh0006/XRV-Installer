@@ -36,7 +36,7 @@ options:
 - **Logs** — an in-app viewer for app events and native carrier output. Keys,
   deployment IDs and proxy credentials are redacted, app events persist to
   private storage, and the crash handler records the final stack trace.
-- **Battery settings** — opens Android's optimisation screen for Huawei/EMUI
+- **Battery settings** — opens Android's optimization screen for Huawei/EMUI
   reliability.
 
 The traffic counters in the status card are real SOCKS payload bytes counted
@@ -147,8 +147,8 @@ Android permits only one active VPN. If another VPN is connected, XRV explains
 this before taking over. Starting XRV in TUN mode replaces the other VPN; use
 Proxy-only mode if the other VPN must remain active.
 
-On Huawei/EMUI and other battery-optimised phones, open **Battery settings**
-in the app and exclude XRV from optimisation. Otherwise Android may suspend
+On Huawei/EMUI and other battery-optimized phones, open **Battery settings**
+in the app and exclude XRV from optimization. Otherwise Android may suspend
 the foreground service.
 
 ## Using proxy-only mode

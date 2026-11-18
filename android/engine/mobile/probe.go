@@ -1,7 +1,7 @@
 package main
 
 // Real network probes used by the Android settings screen. They mirror the
-// Linux client's behaviour:
+// Linux client's behavior:
 //   * choose a Google edge by fetching https://www.google.com/generate_204
 //     through each candidate IP and keeping the fastest 204 response;
 //   * verify the tunnel by requesting https://api.ipify.org through the local

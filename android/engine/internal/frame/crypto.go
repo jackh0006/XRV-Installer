@@ -95,7 +95,7 @@ var (
 		return &buf
 	}}
 	// zstdEncPool and zstdDecPool are used by EncodeBatch/DecodeBatch.
-	// Pooling avoids re-initialising the encoder's internal state on every batch.
+	// Pooling avoids re-initializing the encoder's internal state on every batch.
 	// SpeedFastest (level 1) is ~2× faster than DEFLATE BestSpeed and produces
 	// 10–15% smaller output on compressible text/HTTP traffic.
 	zstdEncPool = sync.Pool{New: func() interface{} {
@@ -250,7 +250,7 @@ func DecodeBatch(c *Crypto, body []byte) ([ClientIDLen]byte, []*Frame, error) {
 	}
 
 	// Decode the leading flags byte. Both peers must run the same version;
-	// an unrecognised flag byte is rejected so a protocol mismatch surfaces
+	// an unrecognized flag byte is rejected so a protocol mismatch surfaces
 	// immediately rather than producing silent corruption.
 	if len(rawPlain) == 0 {
 		return zeroID, nil, errors.New("batch: empty plaintext")

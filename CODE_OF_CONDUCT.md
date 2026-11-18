@@ -14,7 +14,7 @@ diverse, inclusive, and healthy community.
 
 ## Our standards
 
-Examples of behaviour that contributes to a positive environment:
+Examples of behavior that contributes to a positive environment:
 
 - demonstrating empathy and kindness toward other people;
 - being respectful of differing opinions, viewpoints, and experiences;
@@ -22,7 +22,7 @@ Examples of behaviour that contributes to a positive environment:
 - accepting responsibility and apologising to those affected by our mistakes;
 - focusing on what is best for the overall community.
 
-Examples of unacceptable behaviour:
+Examples of unacceptable behavior:
 
 - sexualised language or imagery, and sexual attention or advances;
 - trolling, insulting or derogatory comments, and personal or political attacks;
@@ -35,7 +35,7 @@ Examples of unacceptable behaviour:
 
 Project maintainers are responsible for clarifying and enforcing these
 standards and will take appropriate and fair corrective action in response to
-any behaviour they deem inappropriate, threatening, offensive, or harmful.
+any behavior they deem inappropriate, threatening, offensive, or harmful.
 
 ## Scope
 
@@ -44,7 +44,7 @@ officially representing the project in public spaces.
 
 ## Enforcement
 
-Report abusive, harassing, or otherwise unacceptable behaviour to the project
+Report abusive, harassing, or otherwise unacceptable behavior to the project
 maintainers through the contact in [SECURITY.md](SECURITY.md). All complaints
 will be reviewed and investigated promptly and fairly. Maintainers will respect
 the privacy and security of the reporter.
@@ -52,7 +52,7 @@ the privacy and security of the reporter.
 ## Enforcement guidelines
 
 1. **Correction** — a private warning and explanation.
-2. **Warning** — a warning with consequences for continued behaviour.
+2. **Warning** — a warning with consequences for continued behavior.
 3. **Temporary ban** — a temporary ban from interaction.
 4. **Permanent ban** — a permanent ban from the community.
 

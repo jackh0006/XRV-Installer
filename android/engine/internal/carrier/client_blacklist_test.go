@@ -109,7 +109,7 @@ func TestBlacklistTTLBoundedByMax(t *testing.T) {
 // TestPickRelayEndpointAllBlacklistedRefuses: when every endpoint is
 // blacklisted, pickRelayEndpoint must return -1 so the caller waits out the
 // TTL instead of sending real traffic to a flagged deployment. Hammering
-// blacklisted endpoints (the previous fallback behaviour) plausibly extends
+// blacklisted endpoints (the previous fallback behavior) plausibly extends
 // Apps Script's per-deployment cooldown beyond the 24h daily reset window
 // (see issues #121 and #126).
 func TestPickRelayEndpointAllBlacklistedRefuses(t *testing.T) {
@@ -411,7 +411,7 @@ func (s *blacklistHammerServer) handler() http.HandlerFunc {
 // TestSinglePostOutageSuccessRestoresTraffic: integration test. The relay
 // returns 403 for a short window, then starts echoing. The carrier must
 // recover and deliver an echoed payload promptly (within the fallback-probe
-// rate of the all-blacklisted branch). This is the behaviour that determines
+// rate of the all-blacklisted branch). This is the behavior that determines
 // whether users actually see traffic flow after Apps Script's midnight Pacific
 // quota reset.
 func TestSinglePostOutageSuccessRestoresTraffic(t *testing.T) {
@@ -449,7 +449,7 @@ func TestSinglePostOutageSuccessRestoresTraffic(t *testing.T) {
 	// Simulate the blacklist TTL elapsing. In production this happens
 	// naturally after the failCount-driven TTL (5 min → 1 h); in a 10-second
 	// integration test we force-expire so we can assert the actual rollback
-	// behaviour rather than how long we wait.
+	// behavior rather than how long we wait.
 	c.endpointMu.Lock()
 	for i := range c.endpoints {
 		c.endpoints[i].blacklistedTill = time.Time{}

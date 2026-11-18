@@ -1,0 +1,14 @@
+[Unit]
+Description=XRV encrypted relay client
+Documentation=https://github.com/jackh0006/XRV-Installer/blob/main/GUIDE.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/xrv-client run
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

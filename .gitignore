@@ -33,3 +33,7 @@ android/.kotlin/
 android/*.idsig
 hs_err_pid*.log
 core.*
+dist/
+build/linux/
+build/deb/
+android/engine/xrv-client

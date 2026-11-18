@@ -63,7 +63,7 @@ data class Profile(
         fun isDeploymentId(value: String): Boolean =
             deploymentPattern.matches(normalizeDeployment(value))
 
-        /** Removes pasted spaces/newlines and normalises hex case. */
+        /** Removes pasted spaces/newlines and normalizes hex case. */
         fun normalizeKey(raw: String): String =
             raw.trim().replace(Regex("\\s+"), "").lowercase()
 

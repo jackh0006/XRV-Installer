@@ -1,0 +1,72 @@
+.TH XRV-CLIENT 1 "November 2026" "XRV Client 2.0.0" "User Commands"
+.SH NAME
+xrv-client \- encrypted relay client with an authenticated local SOCKS5 proxy
+.SH SYNOPSIS
+.B xrv-client
+.I command
+.RI [ options ]
+.SH DESCRIPTION
+.B xrv-client
+is the Linux client for the XRV encrypted relay. It starts a SOCKS5 listener
+on
+.B 127.0.0.1
+that requires a generated username and password, forwards TCP sessions through
+the encrypted relay, probes Google edge addresses, and provides a live tunnel
+test and logs.
+.PP
+It is the Linux counterpart of the Android app's proxy-only mode. Android TUN
+and per-app routing are provided by Android's VpnService; on Linux, point
+applications at the local proxy or use the system's VPN tooling.
+.SH COMMANDS
+.TP
+.B setup
+Configure deployment IDs, the tunnel key, the local port, credentials, and a
+Google edge. The command tests the four standard Google edges by default.
+.TP
+.B run
+Start the authenticated local SOCKS5 proxy in the foreground.
+.TP
+.B probe
+Test the configured Google edge candidates. Use
+.B --write
+to save the fastest edge.
+.TP
+.B test
+Request
+.B https://api.ipify.org
+through the local proxy and print the exit IP, latency, and direct IP.
+.TP
+.B check
+Check the process, listener, live tunnel, and direct IP.
+.TP
+.B status
+Show whether the client is running and whether the listener is open.
+.TP
+.B stop
+Stop the background client.
+.TP
+.B logs
+Show the last 500 log lines.
+.TP
+.B config
+Show the non-secret configuration with the tunnel key and proxy credentials
+redacted.
+.TP
+.B version
+Print the version.
+.SH FILES
+.TP
+.I ~/.config/xrv/client.json
+Encrypted-relay configuration, mode 600.
+.TP
+.I ~/.local/state/xrv/client.log
+Private log file with keys, deployment IDs, and proxy credentials redacted.
+.TP
+.I ~/.local/state/xrv/client.pid
+Process ID for the running client.
+.SH SECURITY
+The configuration contains the tunnel key. Never share it. The local proxy
+requires a generated RFC 1929 username and password. The client never logs
+payloads or secrets.
+.SH SEE ALSO
+.I /usr/share/doc/xrv-client/GUIDE.md
