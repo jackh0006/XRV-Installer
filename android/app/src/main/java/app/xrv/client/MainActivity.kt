@@ -116,7 +116,8 @@ class MainActivity : AppCompatActivity() {
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            view.setPadding(0, bars.top, 0, bars.bottom)
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            view.setPadding(0, bars.top, 0, maxOf(bars.bottom, ime.bottom))
             insets
         }
         ViewCompat.requestApplyInsets(binding.root)
@@ -580,6 +581,14 @@ class MainActivity : AppCompatActivity() {
                 runCatching {
                     if (clipboard.primaryClip?.getItemAt(0)?.text?.toString() == address) {
                         clipboard.clearPrimaryClip()
+                    }
+                }
+            }, 60_000)
+        } else {
+            handler.postDelayed({
+                runCatching {
+                    if (clipboard.primaryClip?.getItemAt(0)?.text?.toString() == address) {
+                        clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
                     }
                 }
             }, 60_000)
