@@ -1,8 +1,10 @@
 package app.xrv.client
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProfileTest {
@@ -58,5 +60,15 @@ class ProfileTest {
     fun preservesProfileJson() {
         val p = Profile(listOf(id), key, 2080)
         assertEquals(p, Profile.fromJson(p.json()))
+    }
+
+    @Test
+    fun generatesAndReusesProxyCredentials() {
+        val first = Profile(listOf(id), key).ensureCredentials()
+        assertTrue(first.socksUser.startsWith("xrv"))
+        assertEquals(32, first.socksPass.length)
+        assertEquals(first, first.ensureCredentials())
+        assertNotEquals(first.socksPass, Profile(listOf(id), key).ensureCredentials().socksPass)
+        assertEquals(first, Profile.fromJson(first.json()))
     }
 }

@@ -59,9 +59,12 @@ class SecureProfileStore(context: Context) {
             key(),
             GCMParameterSpec(128, Base64.decode(iv, Base64.NO_WRAP))
         )
-        Profile.fromJson(
+        val loaded = Profile.fromJson(
             String(cipher.doFinal(Base64.decode(data, Base64.NO_WRAP)), Charsets.UTF_8)
         ).normalized()
+        val upgraded = loaded.ensureCredentials()
+        if (upgraded != loaded) runCatching { save(upgraded) }
+        upgraded
     } catch (_: Exception) {
         // A Keystore key can be invalidated after a lock-screen change or a
         // device restore. Treat that as "no saved profile", never as a crash.

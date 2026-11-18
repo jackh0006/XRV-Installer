@@ -29,7 +29,8 @@
   detects an unexpectedly stopped tunnel.
 - **Security hardening.** No cleartext traffic, no user-installed CAs, no
   backups/device-transfer of credentials, no Go logging of relay identifiers,
-  and the release build is minified with JNI keep rules.
+  a randomly authenticated loopback proxy, and a minified release with JNI
+  keep rules.
 - **Port conflicts.** If the chosen local port is busy, XRV picks the next free
   port and displays the real one.
 - **CI was building a debug APK and could trip its own secret scan.** CI now
@@ -39,8 +40,9 @@
 ## Modes
 
 - **TUN · system-wide** — Android VPN, all app traffic, mapped DNS.
-- **Proxy only** — loopback SOCKS5 for v2rayNG and other proxy-aware apps; no
-  VPN interface, so it can coexist with another active VPN.
+- **Proxy only** — loopback SOCKS5 with per-install RFC 1929 credentials for
+  v2rayNG and other proxy-aware apps; no VPN interface, so it can coexist
+  with another active VPN.
 
 ## Important upgrade note
 
@@ -61,6 +63,6 @@ the tunnel's mapped DNS server. This is a protocol limit and is documented in
 
 ```bash
 sha256sum XRV-arm64.apk
-# 2d5abdf92c2abbbc2c3b32985507fe6908e4f5ab4bc0cff81797b151f200b4ab  XRV-arm64.apk
+# b99fc1f547a5dcf28e143d82ab02b5cb40f194211a840ae744eb24093a9cc652  XRV-arm64.apk
 bash android/scripts/verify-apk.sh XRV-arm64.apk
 ```
