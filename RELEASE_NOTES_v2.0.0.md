@@ -63,6 +63,6 @@ the tunnel's mapped DNS server. This is a protocol limit and is documented in
 
 ```bash
 sha256sum XRV-arm64.apk
-# b99fc1f547a5dcf28e143d82ab02b5cb40f194211a840ae744eb24093a9cc652  XRV-arm64.apk
+# 46398d1f07168c84ad4fe721286ac23c0037427d646c57769c583a013bbf0636  XRV-arm64.apk
 bash android/scripts/verify-apk.sh XRV-arm64.apk
 ```
